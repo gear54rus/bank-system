@@ -1,0 +1,10 @@
+#include "rsacryptor.h"
+
+rsacryptor::rsacryptor()
+{
+}
+
+ CryptoPP::Integer rsacryptor::encrypt(CryptoPP::RSA::PublicKey, CryptoPP::Integer& message)
+ {
+     
+ }
