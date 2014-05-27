@@ -1,2 +1,5 @@
 *.exe
 *.pro.user
+*.autosave
+*.obj
+*.dll
