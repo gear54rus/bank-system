@@ -1,5 +1,6 @@
 #include "core.h"
 
-Core::Core()
+Core::Core(int argc, char **argv):
+    QCoreApplication(argc, argv)
 {
 }

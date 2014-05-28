@@ -6,7 +6,7 @@
 class Core : public QCoreApplication
 {
 public:
-    Core();
+    Core(int argc, char** argv);
 };
 
 #endif // CORE_H
