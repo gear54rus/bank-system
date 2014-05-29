@@ -14,13 +14,17 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-
 SOURCES += main.cpp \
     cpaes.cpp \
     rsacryptor.cpp \
-    aescryptor.cpp
+    aescryptor.cpp \
+    integerencoder.cpp
 
 HEADERS += \
     cpaes.h \
     rsacryptor.h \
-    aescryptor.h
+    aescryptor.h \
+    integerencoder.h
+
+LIBS += -lcryptopp562
+CONFIG+ = console
