@@ -4,7 +4,6 @@
 #define CRYPTOPP_DEFAULT_NO_DLL
 #include <cryptopp/dll.h>
 
-
 USING_NAMESPACE(CryptoPP)
 
 class integerEncoder

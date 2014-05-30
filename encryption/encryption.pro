@@ -18,13 +18,17 @@ SOURCES += main.cpp \
     cpaes.cpp \
     rsacryptor.cpp \
     aescryptor.cpp \
-    integerencoder.cpp
+    integerencoder.cpp \
+    dhcryptor.cpp \
+    shahasher.cpp
 
 HEADERS += \
     cpaes.h \
     rsacryptor.h \
     aescryptor.h \
-    integerencoder.h
+    integerencoder.h \
+    dhcryptor.h \
+    shahasher.h
 
 LIBS += -lcryptopp562
 CONFIG+ = console
