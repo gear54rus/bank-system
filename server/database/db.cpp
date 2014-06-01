@@ -17,11 +17,11 @@ bool DBController::connect(const QString& host, quint16 port, const QString& dbn
     db.setPassword(password);
     if (db.open())
     {
-        return 1;
+        return true;
     }
     else
     {
         Log(db.lastError().databaseText(), "Database", Log_Critical);
-        return 0;
+        return false;
     }
 }

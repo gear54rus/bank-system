@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QCoreApplication>
 #include "../database/db.h"
+#include "../network/listener.h"
 
 class Core : public QCoreApplication
 {
@@ -15,7 +16,8 @@ public slots:
     void init();
     void stop();
 private:
-    DBController db;
+    DBController database;
+    TcpListener listener;
 private slots:
 
 };
