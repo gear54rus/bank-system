@@ -9,14 +9,16 @@ QT       += core network sql
 QT       -= gui
 
 TARGET = server
-CONFIG   += console
+CONFIG   += console c++11
 CONFIG   -= app_bundle
 
 TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    core/core.cpp
+    core/core.cpp \
+    core/logger.cpp
 
 HEADERS += \
-    core/core.h
+    core/core.h \
+    core/logger.h
