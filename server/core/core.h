@@ -1,15 +1,22 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include <QObject>
 #include <QCoreApplication>
-#include <QSettings>
+#include "../database/db.h"
 
 class Core : public QCoreApplication
 {
+    Q_OBJECT
 public:
     Core(int argc, char** argv);
-    void Init();
+
+public slots:
+    void init();
+    void stop();
 private:
+    DBController db;
+private slots:
 
 };
 

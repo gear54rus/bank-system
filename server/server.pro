@@ -17,8 +17,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     core/core.cpp \
-    core/logger.cpp
+    core/logger.cpp \
+    database/db.cpp \
+    network/tcplistener.cpp
 
 HEADERS += \
     core/core.h \
-    core/logger.h
+    core/logger.h \
+    database/db.h \
+    network/tcplistener.h
