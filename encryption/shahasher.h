@@ -7,10 +7,10 @@
 
 USING_NAMESPACE(CryptoPP)
 
-class shaHasher
+class shahasher
 {
 public:
-    shaHasher();
+    shahasher();
     static CryptoPP::SecByteBlock hash(byte* data, int length);
 };
 

@@ -43,7 +43,7 @@ CryptoPP::RSA::PrivateKey rsacryptor::getNewRandomPrivateKey()
     AutoSeededRandomPool rng;
 
     // Signer object
-    RSASS<PSS, CryptoPP::SHA1>::Signer signer(privKey);
+    RSASS<PSS, CryptoPP::SHA256>::Signer signer(privKey);
 
     // Create signature space
     size_t length = signer.MaxSignatureLength();
@@ -66,7 +66,7 @@ CryptoPP::RSA::PrivateKey rsacryptor::getNewRandomPrivateKey()
 bool rsacryptor::verifyMessage(const CryptoPP::Integer& message, const CryptoPP::RSA::PublicKey& pubKey, const CryptoPP::SecByteBlock& signature)
 {
     // Verifier object
-    RSASS<PSS, CryptoPP::SHA1>::Verifier verifier(pubKey);
+    RSASS<PSS, CryptoPP::SHA256>::Verifier verifier(pubKey);
 
     //Integer message to bytes
     byte* data;

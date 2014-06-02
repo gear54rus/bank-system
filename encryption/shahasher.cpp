@@ -1,12 +1,14 @@
 #include "shahasher.h"
 
-shaHasher::shaHasher()
+shahasher::shahasher()
 {
 }
 
 
-CryptoPP::SecByteBlock shaHasher::hash(byte* data, int length)
+CryptoPP::SecByteBlock shahasher::hash(byte* data, int length)
 {
     CryptoPP::SHA256 hasher;
-
+    CryptoPP::SecByteBlock digest(32);
+    hasher.CalculateDigest(digest,data,length);
+    return digest;
 }
