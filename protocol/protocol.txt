@@ -19,7 +19,7 @@ Ack			------------------------------------------->
 Client DH End -----------------------------------------> 
 			<------------------------------------------- Change cipher spec
 Ack			------------------------------------------->
-=====================Cipher: AES_CFB{Key: DH shared secret ( or first 32 bytes of DH shared secret), IV: SHA256(Key)}================
+=====================Cipher: AES_CFB{Key: Trunc(DH shared secret), IV: SHA256(Key)}================
 			<------------------------------------------- Data with SHA256(concat of all previous messages)
 Data with SHA256(concat of all previous messages) ----->
 			<------------------------------------------- Ack
