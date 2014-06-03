@@ -1,6 +1,6 @@
 #include "manager.h"
 
-NetworkManager::NetworkManager(QObject *parent, quint16 maxConnections) :
+NetworkManager::NetworkManager(QObject *parent) :
     QObject(parent),
     listener(this)
 {
@@ -16,19 +16,16 @@ void NetworkManager::setMaxConnections(quint16 maxConnections)
 void NetworkManager::newConnection()
 {
     listener.pauseAccepting();
-    openConnections.insert(listener.nextPendingConnection());
-    int a = openConnections.size();
+    openConnections.insert(new Connection(listener.nextPendingConnection()));
     if (openConnections.size() < maxConnections)
     {
         listener.resumeAccepting();
     }
 }
 
-void NetworkManager::toDelete(QTcpSocket* connection)
+void NetworkManager::toDelete(Connection* connection)
 {
     openConnections.remove(connection);
-    connection->disconnectFromHost();
-    connection->waitForDisconnected(5000);
     connection->deleteLater();
     if (openConnections.size() < maxConnections)
     {

@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     core/core.cpp \
     core/logger.cpp \
     database/db.cpp \
-    network/manager.cpp
+    network/manager.cpp \
+    network/connection.cpp
 
 HEADERS += \
     core/core.h \
@@ -27,4 +28,7 @@ HEADERS += \
     database/db.h \
     config.h \
     global.h \
-    network/manager.h
+    network/manager.h \
+    network/connection.h
+
+LIBS+= -lcryptopp
