@@ -19,12 +19,12 @@ SOURCES += main.cpp \
     core/core.cpp \
     core/logger.cpp \
     database/db.cpp \
-    network/listener.cpp
+    network/manager.cpp
 
 HEADERS += \
     core/core.h \
     core/logger.h \
     database/db.h \
     config.h \
-    network/listener.h \
-    global.h
+    global.h \
+    network/manager.h

@@ -6,6 +6,7 @@
 #include <QStringList>
 
 enum LOG_TYPE {Log_Debug = -1, Log_Message, Log_Error, Log_Critical};
+const QString LevelNames[] = {"DEBUG", "MSG", "ERROR", "CRITICAL"};
 
 void SetLogLevel(LOG_TYPE logLevel);
 

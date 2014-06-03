@@ -1,10 +1,10 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "../database/db.h"
+#include "../network/manager.h"
 #include <QObject>
 #include <QCoreApplication>
-#include "../database/db.h"
-#include "../network/listener.h"
 
 class Core : public QCoreApplication
 {
@@ -17,7 +17,7 @@ public slots:
     void stop();
 private:
     DBController database;
-    TcpListener listener;
+    NetworkManager* manager;
 private slots:
 
 };

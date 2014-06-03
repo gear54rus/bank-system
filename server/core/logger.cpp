@@ -9,7 +9,6 @@ namespace
 {
 QMutex MainLock;
 LOG_TYPE Level = Log_Message;
-QString LevelNames[] = {"DEBUG", "MSG", "ERROR", "CRITICAL"};
 }
 
 void SetLogLevel(LOG_TYPE logLevel)
