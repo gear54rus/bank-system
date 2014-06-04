@@ -13,8 +13,6 @@ class dhcryptor
 public:
     dhcryptor();
     static void initialize();
-    static QByteArray getEmptyPubKey();
-    static QByteArray getEmptyPrivKey();
     static void getKeyPair(QByteArray& privKey, QByteArray& pubKey);
     static QByteArray getSharedSecret(QByteArray& privKeyA, QByteArray& pubKeyB);
 private:

@@ -17,21 +17,11 @@ void dhcryptor::initialize()
     _dh.AccessGroupParameters().Initialize(p, q, g);
 }
 
-QByteArray dhcryptor::getEmptyPubKey()
-{
-    QByteArray pub(_dh.PublicKeyLength(),0);
-    return pub;
-}
-
-QByteArray dhcryptor::getEmptyPrivKey()
-{
-    QByteArray priv(_dh.PrivateKeyLength(),0);
-    return priv;
-}
-
 void dhcryptor::getKeyPair(QByteArray& privKey, QByteArray& pubKey)
 {
     AutoSeededRandomPool rnd;
+    privKey.resize(_dh.PrivateKeyLength());
+    pubKey.resize(_dh.PublicKeyLength());
     CryptoPP::SecByteBlock privateKey(privKey.length()),publicKey(pubKey.length());
     _dh.GenerateKeyPair(rnd, privateKey, publicKey);
     memcpy(privKey.data(),privateKey.BytePtr(),privKey.length());

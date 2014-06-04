@@ -4,32 +4,29 @@ aescryptor::aescryptor()
 {
 }
 
-void aescryptor::encrypt(byte* key, int keyLength, byte* iv, int ivLength, byte* message, int messageLength, byte* out, int outLength)
+aescryptor::aescryptor(const QByteArray &key, const QByteArray &iv)
 {
-    CFB_Mode< AES >::Encryption cfbEncryption;
-    cfbEncryption.SetKeyWithIV(key, keyLength, iv);
-    cfbEncryption.ProcessData(out, message, messageLength);
+    setKeyWithIV(key,iv);
 }
 
-void aescryptor::decrypt(byte* key, int keyLength, byte* iv, int ivLength, byte* message, int messageLength, byte* out, int outLength)
+void aescryptor::setKeyWithIV(const QByteArray &key, const QByteArray &iv)
 {
-    CFB_Mode<AES>::Decryption cfbDecryption(key, keyLength, iv);
-    cfbDecryption.ProcessData(out, message, messageLength);
+    _cfbEncryption.SetKeyWithIV((byte*)key.data(),key.length(),(byte*)iv.data());
+    _cfbDecryption.SetKeyWithIV((byte*)key.data(),key.length(),(byte*)iv.data());
 }
- QByteArray aescryptor::encrypt(QByteArray key, QByteArray iv, QByteArray message)
- {
-     QByteArray out;
-     out.resize(message.size());
-     CFB_Mode<AES>::Encryption cfbEncryption((byte*)key.data(), key.length(), (byte*)iv.data());
-     cfbEncryption.ProcessData((byte*)out.data(), (byte*)message.data(), message.length());
-     return out;
- }
 
- QByteArray aescryptor::decrypt(QByteArray key, QByteArray iv, QByteArray encryptedMessage)
+QByteArray aescryptor::encrypt(const QByteArray& message)
+{
+    QByteArray out;
+    out.resize(message.size());
+    _cfbEncryption.ProcessData((byte*)out.data(), (byte*)message.data(), message.length());
+    return out;
+}
+
+QByteArray aescryptor::decrypt(const QByteArray& encryptedMessage)
 {
     QByteArray out;
     out.resize(encryptedMessage.size());
-    CFB_Mode<AES>::Decryption cfbDecryption((byte*)key.data(), key.length(), (byte*)iv.data());
-    cfbDecryption.ProcessData((byte*)out.data(), (byte*)encryptedMessage.data(), encryptedMessage.length());
+    _cfbDecryption.ProcessData((byte*)out.data(), (byte*)encryptedMessage.data(), encryptedMessage.length());
     return out;
 }

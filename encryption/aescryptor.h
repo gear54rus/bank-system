@@ -12,12 +12,13 @@ class aescryptor
 {
 public:
     aescryptor();
-    static void encrypt(byte* key, int keyLength, byte* iv, int ivLength, byte* message, int messageLength, byte* out, int outLength);
-    static void decrypt(byte* key, int keyLength, byte* iv, int ivLength, byte* message, int messageLength, byte* out, int outLength);
-
-    static QByteArray encrypt(QByteArray key, QByteArray iv, QByteArray message);
-    static QByteArray decrypt(QByteArray key, QByteArray iv, QByteArray encryptedMessage);
-
+    aescryptor(const QByteArray& key,const QByteArray& iv);
+    void setKeyWithIV(const QByteArray& key,const QByteArray& iv);
+    QByteArray encrypt(const QByteArray& message);
+    QByteArray decrypt(const QByteArray& encryptedMessage);
+private:
+    CFB_Mode< AES >::Encryption _cfbEncryption;
+    CFB_Mode< AES >::Decryption _cfbDecryption;
 };
 
 #endif // AESCRYPTOR_H
