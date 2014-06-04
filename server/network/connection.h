@@ -10,7 +10,7 @@ class Connection: public QObject
 {
 public:
     explicit Connection(QTcpSocket* socket, QObject* parent = 0);
-    enum STATE {CONNECTED, SERVER_HELLO, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};
+    enum STATE {SERVER_HELLO, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};
 private:
     QTcpSocket* socket;
     STATE state;
