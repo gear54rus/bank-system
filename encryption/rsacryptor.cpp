@@ -79,5 +79,42 @@ bool rsacryptor::verifyMessage(const QByteArray message,const CryptoPP::RSA::Pub
    return result;
 }
 
+CryptoPP::RSA::PrivateKey rsacryptor::loadPrivateKeyFromFile(std::string filename)
+{
+    FileSource file(filename.c_str(), true /*pumpAll*/);
+    ByteQueue queue;
+    file.TransferTo(queue);
+    queue.MessageEnd();
+    CryptoPP::RSA::PrivateKey privKey;
+    privKey.Load(queue);
+    return privKey;
+}
 
+void rsacryptor::savePrivateKeyToFile(std::string filename, RSA::PrivateKey& privKey)
+{
+    ByteQueue queue;
+    privKey.Save(queue);
+    FileSink file(filename.c_str());
+    queue.CopyTo(file);
+    file.MessageEnd();
+}
 
+CryptoPP::RSA::PublicKey loadPublicKeyFromFile(std::string filename)
+{
+    FileSource file(filename.c_str(), true /*pumpAll*/);
+    ByteQueue queue;
+    file.TransferTo(queue);
+    queue.MessageEnd();
+    CryptoPP::RSA::PublicKey pubKey;
+    pubKey.Load(queue);
+    return pubKey;
+}
+
+CryptoPP::RSA::PublicKey savePublicKeyToFile(std::string filename, RSA::PublicKey& pubKey)
+{
+    ByteQueue queue;
+    pubKey.Save(queue);
+    FileSink file(filename.c_str());
+    queue.CopyTo(file);
+    file.MessageEnd();
+}

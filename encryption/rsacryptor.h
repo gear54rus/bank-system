@@ -17,12 +17,18 @@ public:
     static CryptoPP::RSA::PrivateKey getNewRandomPrivateKey() ;
     static CryptoPP::RSA::PublicKey getPublicKeyFromPrivate(const CryptoPP::RSA::PrivateKey privKey) ;
 
+    static CryptoPP::RSA::PrivateKey loadPrivateKeyFromFile(std::string filename);
+    static void savePrivateKeyToFile(std::string filename, CryptoPP::RSA::PrivateKey& privKey);
+
+    static CryptoPP::RSA::PublicKey loadPublicKeyFromFile(std::string filename);
+    static void savePublicKeyToFile(std::string filename, CryptoPP::RSA::PublicKey& pubKey);
+
+
     static QByteArray encrypt(const CryptoPP::RSA::PublicKey pubKey, const QByteArray message);
     static QByteArray decrypt(const CryptoPP::RSA::PrivateKey privKey, const QByteArray cipherMessage) ;
 
     static QByteArray signMessage(const QByteArray message, const CryptoPP::RSA::PrivateKey privKey) ;
     static bool verifyMessage(const QByteArray message,const CryptoPP::RSA::PublicKey& pubKey, const  QByteArray signature) ;
-
 };
 
 #endif // RSACRYPTOR_H
