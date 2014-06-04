@@ -98,21 +98,21 @@ int main(int argc, char *argv[])
         // DH Тестирование!
         cout << "DH testing!" << endl;
         dhcryptor::initialize();
-        CryptoPP::SecByteBlock pubKey1 = dhcryptor::getPubKey();
-        CryptoPP::SecByteBlock pubKey2 = dhcryptor::getPubKey();
-        CryptoPP::SecByteBlock privKey1 = dhcryptor::getPrivKey();
-        CryptoPP::SecByteBlock privKey2 = dhcryptor::getPrivKey();
-        dhcryptor::setKeyPair(privKey1,pubKey1);
-        dhcryptor::setKeyPair(privKey2,pubKey2);
-        CryptoPP::SecByteBlock secret1 = dhcryptor::getSharedSecret(privKey1,pubKey2);
-        CryptoPP::SecByteBlock secret2 = dhcryptor::getSharedSecret(privKey2,pubKey1);
+        QByteArray pubKey1 = dhcryptor::getEmptyPubKey();
+        QByteArray pubKey2 = dhcryptor::getEmptyPubKey();
+        QByteArray privKey1 = dhcryptor::getEmptyPrivKey();
+        QByteArray privKey2 = dhcryptor::getEmptyPrivKey();
+        dhcryptor::getKeyPair(privKey1,pubKey1);
+        dhcryptor::getKeyPair(privKey2,pubKey2);
+        QByteArray secret1 = dhcryptor::getSharedSecret(privKey1,pubKey2);
+        QByteArray secret2 = dhcryptor::getSharedSecret(privKey2,pubKey1);
         cout << "first key pair: " << endl << "pubkey: " << hex << pubKey1.data() << endl << "privKey: "  << privKey1.data() << endl;
         cout << "second key pair: " << endl << "pubkey: " << hex << pubKey2.data() << endl << "privKey: "  << privKey2.data() << endl;
-        cout << "are pub keys equal? false : " << ((pubKey1.size() == pubKey2.size()) && (0 == memcmp(pubKey1.BytePtr(), pubKey2.BytePtr(), pubKey1.size()))) << endl;
-        cout << "are priv keys equal? false : " << ((privKey1.size() == privKey2.size()) && (0 == memcmp(privKey1.BytePtr(), privKey2.BytePtr(), privKey1.size()))) << endl;
+        cout << "are pub keys equal? false : " << ((pubKey1.size() == pubKey2.size()) && (0 == memcmp(pubKey1.data(), pubKey2.data(), pubKey1.size()))) << endl;
+        cout << "are priv keys equal? false : " << ((privKey1.size() == privKey2.size()) && (0 == memcmp(privKey1.data(), privKey2.data(), privKey1.size()))) << endl;
         cout << "shared secret1: " << hex << secret1.data() << endl;
         cout << "shared secret2: " << hex  << secret2.data() << endl;
-        cout << "are shared secrets equal? true :" << ((secret1.size() == secret2.size()) && (0 == memcmp(secret1.BytePtr(), secret2.BytePtr(), secret1.size()))) << endl;
+        cout << "are shared secrets equal? true :" << ((secret1.size() == secret2.size()) && (0 == memcmp(secret1.data(), secret2.data(), secret1.size()))) << endl;
     }
 
     {

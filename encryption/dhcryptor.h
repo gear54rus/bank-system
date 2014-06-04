@@ -4,6 +4,8 @@
 #define CRYPTOPP_DEFAULT_NO_DLL
 #include <cryptopp/dll.h>
 
+#include <QByteArray>
+
 USING_NAMESPACE(CryptoPP)
 
 class dhcryptor
@@ -11,10 +13,10 @@ class dhcryptor
 public:
     dhcryptor();
     static void initialize();
-    static CryptoPP::SecByteBlock getPubKey();
-    static CryptoPP::SecByteBlock getPrivKey();
-    static void setKeyPair(CryptoPP::SecByteBlock& privKey, CryptoPP::SecByteBlock& pubKey);
-    static CryptoPP::SecByteBlock getSharedSecret(CryptoPP::SecByteBlock& privKeyA, CryptoPP::SecByteBlock& pubKeyB);
+    static QByteArray getEmptyPubKey();
+    static QByteArray getEmptyPrivKey();
+    static void getKeyPair(QByteArray& privKey, QByteArray& pubKey);
+    static QByteArray getSharedSecret(QByteArray& privKeyA, QByteArray& pubKeyB);
 private:
     static CryptoPP::DH _dh;
 };

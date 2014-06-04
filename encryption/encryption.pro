@@ -15,7 +15,6 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    cpaes.cpp \
     rsacryptor.cpp \
     aescryptor.cpp \
     integerencoder.cpp \
@@ -23,7 +22,6 @@ SOURCES += main.cpp \
     shahasher.cpp
 
 HEADERS += \
-    cpaes.h \
     rsacryptor.h \
     aescryptor.h \
     integerencoder.h \

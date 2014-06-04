@@ -17,28 +17,35 @@ void dhcryptor::initialize()
     _dh.AccessGroupParameters().Initialize(p, q, g);
 }
 
-CryptoPP::SecByteBlock dhcryptor::getPubKey()
+QByteArray dhcryptor::getEmptyPubKey()
 {
-
-    SecByteBlock pub(_dh.PublicKeyLength());
+    QByteArray pub(_dh.PublicKeyLength(),0);
     return pub;
 }
 
-CryptoPP::SecByteBlock dhcryptor::getPrivKey()
+QByteArray dhcryptor::getEmptyPrivKey()
 {
-    SecByteBlock priv(_dh.PrivateKeyLength());
+    QByteArray priv(_dh.PrivateKeyLength(),0);
     return priv;
 }
 
-void dhcryptor::setKeyPair(CryptoPP::SecByteBlock& privKey, CryptoPP::SecByteBlock& pubKey)
+void dhcryptor::getKeyPair(QByteArray& privKey, QByteArray& pubKey)
 {
     AutoSeededRandomPool rnd;
-    _dh.GenerateKeyPair(rnd, privKey, pubKey);
+    CryptoPP::SecByteBlock privateKey(privKey.length()),publicKey(pubKey.length());
+    _dh.GenerateKeyPair(rnd, privateKey, publicKey);
+    memcpy(privKey.data(),privateKey.BytePtr(),privKey.length());
+    memcpy(pubKey.data(),publicKey.BytePtr(),pubKey.length());
 }
 
-CryptoPP::SecByteBlock dhcryptor::getSharedSecret(CryptoPP::SecByteBlock& privKeyA, CryptoPP::SecByteBlock& pubKeyB)
+QByteArray dhcryptor::getSharedSecret(QByteArray& privKeyA, QByteArray& pubKeyB)
 {
+    CryptoPP::SecByteBlock privateKey(privKeyA.length()), publicKey(pubKeyB.length());
+    memcpy(privateKey.BytePtr(),privKeyA.data(),privKeyA.length());
+    memcpy(publicKey.BytePtr(),pubKeyB.data(),pubKeyB.length());
     SecByteBlock sharedSecret(_dh.AgreedValueLength());
-    _dh.Agree(sharedSecret, privKeyA, pubKeyB);
-    return sharedSecret;
+    _dh.Agree(sharedSecret, privateKey, publicKey);
+    QByteArray shSecret(_dh.AgreedValueLength(),0);
+    memcpy(shSecret.data(),sharedSecret.BytePtr(),shSecret.length());
+    return shSecret;
 }

@@ -37,3 +37,17 @@ CryptoPP::Integer integerEncoder::bytesToInteger (const byte* data, const int le
     CryptoPP::Integer result(data, length);
     return result;
 }
+
+QByteArray integerEncoder::integerToQByteArray(const CryptoPP::Integer data)
+{
+    QByteArray arr;
+    arr.resize(data.MinEncodedSize());
+    data.Encode((byte*)arr.data(),arr.length());
+    return arr;
+}
+
+CryptoPP::Integer integerEncoder::qByteArrayToInteger(const QByteArray data)
+{
+    CryptoPP::Integer result((byte*)data.data(),data.length());
+    return result;
+}

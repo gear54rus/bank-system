@@ -5,6 +5,8 @@
 #include <cryptopp/dll.h>
 #include <cryptopp/md5.h>
 
+#include <QByteArray>
+
 USING_NAMESPACE(CryptoPP)
 
 class shahasher
@@ -12,6 +14,7 @@ class shahasher
 public:
     shahasher();
     static CryptoPP::SecByteBlock hash(byte* data, int length);
+    static QByteArray hash(QByteArray data);
 };
 
 #endif // SHAHASHER_H

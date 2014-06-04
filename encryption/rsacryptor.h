@@ -5,6 +5,7 @@
 #include <cryptopp/dll.h>
 #include <cryptopp/rsa.h>
 
+#include <QByteArray>
 
 USING_NAMESPACE(CryptoPP)
 
@@ -22,6 +23,13 @@ public:
 
     static CryptoPP::SecByteBlock signMessage(const CryptoPP::Integer& message, const CryptoPP::RSA::PrivateKey privKey) ;
     static bool verifyMessage(const CryptoPP::Integer& message,const CryptoPP::RSA::PublicKey& pubKey, const  CryptoPP::SecByteBlock& signature) ;
+
+    //методы для QByteArray
+    static QByteArray encrypt(const CryptoPP::RSA::PublicKey pubKey, const QByteArray message);
+    static QByteArray decrypt(const CryptoPP::RSA::PrivateKey privKey, const QByteArray cipherMessage) ;
+
+    static QByteArray signMessage(const QByteArray message, const CryptoPP::RSA::PrivateKey privKey) ;
+    static bool verifyMessage(const QByteArray message,const CryptoPP::RSA::PublicKey& pubKey, const  QByteArray signature) ;
 
 };
 
