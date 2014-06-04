@@ -5,5 +5,5 @@ Connection::Connection(QTcpSocket *socket, QObject *parent) :
 {
     this->socket = socket;
     socket->setParent(this);
-    state = CONNECTED;
+    state = SERVER_DH_BEGIN;
 }
