@@ -44,6 +44,7 @@ void rsacryptor::getNewRandomPrivateKey()
 {
     clearPrivKeyAndSignerIfSet();
     _privKey = new CryptoPP::RSA::PrivateKey();
+    _prng.Reseed();
     _privKey->GenerateRandomWithKeySize(_prng, 2048);
     _isPrivateKeySet = true;
     setSigner();
@@ -140,6 +141,7 @@ void rsacryptor::loadPublicKeyFromFile(std::string filename)
     file.TransferTo(queue);
     queue.MessageEnd();
     clearPubKeyAndVerifierIfSet();
+    _pubKey = new RSA::PublicKey;
     _pubKey->Load(queue);
     _isPublicKeySet = true;
     setVerifier();

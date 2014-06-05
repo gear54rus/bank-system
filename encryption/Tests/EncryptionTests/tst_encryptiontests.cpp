@@ -28,6 +28,8 @@ private Q_SLOTS:
     void RSAdifferentSignatiresFromDifferentMessages();
     void RSAverifySignature();
     void RSAverifySignatureWithOtherKey();
+    void RSAsaveLoadPrivateKey();
+    void RSAsaveLoadPublicKey();
 
     void AESencryptionWithDiffKeysDiffer();
     void AESencryptionWithDiffIvDiffer();
@@ -154,6 +156,36 @@ void EncryptionTests::RSAverifySignatureWithOtherKey()
     QByteArray sign1 = A.signMessage(message);
     bool res = B.verifyMessage(message,sign1);
     QVERIFY2(!res, "verifier returned true with false key");
+}
+
+void EncryptionTests::RSAsaveLoadPrivateKey()
+{
+    std::string filename = "G:\\privKey";
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray cm1 = A.encrypt(message);
+    A.savePrivateKeyToFile(filename);
+    rsacryptor B;
+    B.loadPrivateKeyFromFile(filename);
+    QByteArray rm1 = B.decrypt(cm1);
+    bool res = rm1 == message;
+    QVERIFY2(res, "load key isn't same origin key");
+}
+
+void EncryptionTests::RSAsaveLoadPublicKey()
+{
+    std::string filename = "G:\\privKey";
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray cm1 = A.encrypt(message);
+    A.savePublicKeyToFile(filename);
+    rsacryptor B;
+    B.loadPublicKeyFromFile(filename);
+    QByteArray cm2 = B.encrypt(message);
+    bool res = cm1 == cm2;
+    QVERIFY2(res, "load key isn't same origin key");
 }
 
 void EncryptionTests::AESencryptionWithDiffKeysDiffer()
