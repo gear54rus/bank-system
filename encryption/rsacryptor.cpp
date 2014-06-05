@@ -5,57 +5,90 @@ USING_NAMESPACE(CryptoPP)
 
 rsacryptor::rsacryptor()
 {
+    _isPrivateKeySet = false;
+    _isPublicKeySet = false;
+    _isSignerSet = false;
+    _isVerifierSet = false;
 }
 rsacryptor::~rsacryptor()
 {
+   clearPubKeyAndVerifierIfSet();
+   clearPrivKeyAndSignerIfSet();
 }
 
-CryptoPP::RSA::PrivateKey rsacryptor::getNewRandomPrivateKey()
+void rsacryptor::setSigner()
 {
-    AutoSeededRandomPool prng;
-    CryptoPP::RSA::PrivateKey privKey;
-    privKey.GenerateRandomWithKeySize(prng, 2048);
-    return privKey;
+    if (_isSignerSet) delete _signer;
+    if (_isPrivateKeySet)
+    {
+         _signer = new RSASS<PSS, SHA256>::Signer(*_privKey);
+         _isSignerSet = true;
+    }
+    else
+        _isSignerSet = false;
 }
 
-CryptoPP::RSA::PublicKey rsacryptor::getPublicKeyFromPrivate(const CryptoPP::RSA::PrivateKey privKey)
+void rsacryptor::setVerifier()
 {
-    CryptoPP::RSA::PublicKey pubKey(privKey);
-    return pubKey;
+    if (_isVerifierSet) delete _verifier;
+    if (_isPublicKeySet)
+    {
+         _verifier = new CryptoPP::RSASS < CryptoPP::PSS, CryptoPP::SHA256>::Verifier(*_pubKey);
+         _isVerifierSet = true;
+    }
+    else
+        _isVerifierSet = false;
 }
 
-QByteArray rsacryptor::encrypt(const CryptoPP::RSA::PublicKey pubKey, const QByteArray message)
+void rsacryptor::getNewRandomPrivateKey()
 {
+    clearPrivKeyAndSignerIfSet();
+    _privKey = new CryptoPP::RSA::PrivateKey();
+    _privKey->GenerateRandomWithKeySize(_prng, 2048);
+    _isPrivateKeySet = true;
+    setSigner();
+
+}
+
+void rsacryptor::getPublicKeyFromPrivate()
+{
+    clearPubKeyAndVerifierIfSet();
+    _pubKey = new CryptoPP::RSA::PublicKey(*_privKey);
+    _isPublicKeySet = true;
+    setVerifier();
+
+}
+
+QByteArray rsacryptor::encrypt(const QByteArray message)
+{
+    if (_isPublicKeySet == false) return QByteArray();
     CryptoPP::Integer m((byte*)message.data(),message.length());
-    m = pubKey.ApplyFunction(m);
+    m = _pubKey->ApplyFunction(m);
     QByteArray result(m.MinEncodedSize(),0);
     m.Encode((byte*)result.data(),result.length());
     return result;
 }
 
-QByteArray rsacryptor::decrypt(const CryptoPP::RSA::PrivateKey privKey, const QByteArray cipherMessage)
+QByteArray rsacryptor::decrypt(const QByteArray cipherMessage)
 {
+    if (_isPrivateKeySet == false) return QByteArray();
     CryptoPP::Integer m((byte*)cipherMessage.data(),cipherMessage.length());
-    AutoSeededRandomPool rnd;
-    m = privKey.CalculateInverse(rnd , m);
+    m = _privKey->CalculateInverse(_prng , m);
     QByteArray result(m.MinEncodedSize(),0);
     m.Encode((byte*)result.data(),result.length());
     return result;
 }
 
-QByteArray rsacryptor::signMessage(const QByteArray message, const CryptoPP::RSA::PrivateKey privKey)
+QByteArray rsacryptor::signMessage(const QByteArray message)
 {
-    AutoSeededRandomPool rng;
-
-    // Signer object
-    RSASS<PSS, CryptoPP::SHA256>::Signer signer(privKey);
+    if (_isSignerSet == false) return QByteArray();
 
     // Create signature space
-    size_t length = signer.MaxSignatureLength();
+    size_t length = _signer->MaxSignatureLength();
     SecByteBlock signature(length);
 
     // Sign message
-    length = signer.SignMessage(rng, (byte*) message.data(),
+    length = _signer->SignMessage(_prng, (byte*) message.data(),
        message.length(), signature);
 
     // Resize now we know the true size of the signature
@@ -66,55 +99,95 @@ QByteArray rsacryptor::signMessage(const QByteArray message, const CryptoPP::RSA
     return result;
 }
 
-bool rsacryptor::verifyMessage(const QByteArray message,const CryptoPP::RSA::PublicKey& pubKey, const  QByteArray signature)
+bool rsacryptor::verifyMessage(const QByteArray message, const  QByteArray signature)
 {
-    // Verifier object
-    RSASS<PSS, CryptoPP::SHA256>::Verifier verifier(pubKey);
+    if (_isVerifierSet == false) return false;
 
     // Verify
-    bool result = verifier.VerifyMessage((byte*)message.data(),
+    bool result = _verifier->VerifyMessage((byte*)message.data(),
        message.length(), (byte*)signature.data(), signature.size());
 
     // Result
    return result;
 }
 
-CryptoPP::RSA::PrivateKey rsacryptor::loadPrivateKeyFromFile(std::string filename)
+void rsacryptor::loadPrivateKeyFromFile(std::string filename)
 {
+    clearPrivKeyAndSignerIfSet();
     FileSource file(filename.c_str(), true /*pumpAll*/);
     ByteQueue queue;
     file.TransferTo(queue);
     queue.MessageEnd();
-    CryptoPP::RSA::PrivateKey privKey;
-    privKey.Load(queue);
-    return privKey;
+    _privKey = new CryptoPP::RSA::PrivateKey;
+    _privKey->Load(queue);
+    _isPrivateKeySet = true;
+    setSigner();
 }
 
-void rsacryptor::savePrivateKeyToFile(std::string filename, RSA::PrivateKey& privKey)
+void rsacryptor::savePrivateKeyToFile(std::string filename)
 {
     ByteQueue queue;
-    privKey.Save(queue);
+    _privKey->Save(queue);
     FileSink file(filename.c_str());
     queue.CopyTo(file);
     file.MessageEnd();
 }
 
-CryptoPP::RSA::PublicKey loadPublicKeyFromFile(std::string filename)
+void rsacryptor::loadPublicKeyFromFile(std::string filename)
 {
     FileSource file(filename.c_str(), true /*pumpAll*/);
     ByteQueue queue;
     file.TransferTo(queue);
     queue.MessageEnd();
-    CryptoPP::RSA::PublicKey pubKey;
-    pubKey.Load(queue);
-    return pubKey;
+    clearPubKeyAndVerifierIfSet();
+    _pubKey->Load(queue);
+    _isPublicKeySet = true;
+    setVerifier();
 }
 
-CryptoPP::RSA::PublicKey savePublicKeyToFile(std::string filename, RSA::PublicKey& pubKey)
+void rsacryptor::savePublicKeyToFile(std::string filename)
 {
     ByteQueue queue;
-    pubKey.Save(queue);
+    _pubKey->Save(queue);
     FileSink file(filename.c_str());
     queue.CopyTo(file);
     file.MessageEnd();
+}
+
+void rsacryptor::clearPubKeyAndVerifierIfSet()
+{
+    if (_isPublicKeySet)
+    {
+        delete _pubKey;
+        _isPublicKeySet = false;
+    }
+    if (_isVerifierSet)
+    {
+        delete _verifier;
+        _isVerifierSet = false;
+    }
+}
+
+void rsacryptor::clearPrivKeyAndSignerIfSet()
+{
+    if (_isPrivateKeySet)
+    {
+        delete _privKey;
+        _isPrivateKeySet = false;
+    }
+    if (_isSignerSet)
+    {
+        delete _signer;
+        _isSignerSet = false;
+    }
+}
+
+bool rsacryptor::isPublicKeySet()
+{
+    return _isPublicKeySet;
+}
+
+bool rsacryptor::isPrivateKeySet()
+{
+    return _isPrivateKeySet;
 }

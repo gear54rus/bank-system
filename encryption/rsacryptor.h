@@ -14,21 +14,39 @@ class rsacryptor
 public:
     rsacryptor();
     ~rsacryptor();
-    static CryptoPP::RSA::PrivateKey getNewRandomPrivateKey() ;
-    static CryptoPP::RSA::PublicKey getPublicKeyFromPrivate(const CryptoPP::RSA::PrivateKey privKey) ;
 
-    static CryptoPP::RSA::PrivateKey loadPrivateKeyFromFile(std::string filename);
-    static void savePrivateKeyToFile(std::string filename, CryptoPP::RSA::PrivateKey& privKey);
+    void getNewRandomPrivateKey() ;
+    void getPublicKeyFromPrivate() ;
 
-    static CryptoPP::RSA::PublicKey loadPublicKeyFromFile(std::string filename);
-    static void savePublicKeyToFile(std::string filename, CryptoPP::RSA::PublicKey& pubKey);
+    void loadPrivateKeyFromFile(std::string filename);
+    void savePrivateKeyToFile(std::string filename);
 
+    void loadPublicKeyFromFile(std::string filename);
+    void savePublicKeyToFile(std::string filename);
 
-    static QByteArray encrypt(const CryptoPP::RSA::PublicKey pubKey, const QByteArray message);
-    static QByteArray decrypt(const CryptoPP::RSA::PrivateKey privKey, const QByteArray cipherMessage) ;
+    bool isPublicKeySet();
+    bool isPrivateKeySet();
 
-    static QByteArray signMessage(const QByteArray message, const CryptoPP::RSA::PrivateKey privKey) ;
-    static bool verifyMessage(const QByteArray message,const CryptoPP::RSA::PublicKey& pubKey, const  QByteArray signature) ;
+    QByteArray encrypt(const QByteArray message);
+    QByteArray decrypt(const QByteArray cipherMessage) ;
+
+    QByteArray signMessage(const QByteArray message) ;
+    bool verifyMessage(const QByteArray message, const  QByteArray signature) ;
+
+private:
+    bool _isPrivateKeySet;
+    bool _isPublicKeySet;
+    bool _isSignerSet;
+    bool _isVerifierSet;
+    CryptoPP::RSA::PublicKey* _pubKey;
+    CryptoPP::RSA::PrivateKey* _privKey;
+    CryptoPP::AutoSeededRandomPool _prng;
+    CryptoPP::RSASS<CryptoPP::PSS, CryptoPP::SHA256>::Signer* _signer;
+    CryptoPP::RSASS<CryptoPP::PSS, CryptoPP::SHA256>::Verifier* _verifier;
+    void clearPrivKeyAndSignerIfSet();
+    void clearPubKeyAndVerifierIfSet();
+    void setSigner();
+    void setVerifier();
 };
 
 #endif // RSACRYPTOR_H

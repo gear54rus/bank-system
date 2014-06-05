@@ -57,93 +57,102 @@ EncryptionTests::EncryptionTests()
 
 void EncryptionTests::RSAsamePublicKeysAndSameEncryptionFromOnePrivateKey()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    CryptoPP::RSA::PublicKey pubKey2 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    QByteArray cipherMessage1 = rsacryptor::encrypt(pubKey1,message);
-    QByteArray cipherMessage2 = rsacryptor::encrypt(pubKey2,message);
-    bool result = memcmp(cipherMessage1.data(),cipherMessage2.data(),cipherMessage1.length());
-    QVERIFY2(!result, "diff keys");
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray cipherMessage1 = A.encrypt(message);
+    A.getPublicKeyFromPrivate();
+    QByteArray cipherMessage2 = A.encrypt(message);
+    bool result = cipherMessage1 == cipherMessage2;
+    QVERIFY2(result, "diff keys");
 }
 
 void EncryptionTests::RSAencryptedMessageDiffersMessage()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    QByteArray cipherMessage1 = rsacryptor::encrypt(pubKey1,message);
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray cipherMessage1 = A.encrypt(message);
     bool res = message != cipherMessage1;
     QVERIFY2(res, "encrypted message == message");
 }
 
 void EncryptionTests::RSArecoveredMessageEqualMessage()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    QByteArray cipherMessage1 = rsacryptor::encrypt(pubKey1,message);
-    QByteArray recoveredMessage1 = rsacryptor::decrypt(privKey1,cipherMessage1);
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray cipherMessage1 = A.encrypt(message);
+    QByteArray recoveredMessage1 = A.decrypt(cipherMessage1);
     bool res = recoveredMessage1 == message;
-     QVERIFY2(res, "recovered message != message");
+    QVERIFY2(res, "recovered message != message");
 }
 
 void EncryptionTests::RSAdifferentEncryptedMessagesFromDifferentKeys()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    CryptoPP::RSA::PrivateKey privKey2 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey2 = rsacryptor::getPublicKeyFromPrivate(privKey2);
-    QByteArray cipherMessage1 = rsacryptor::encrypt(pubKey1,message);
-    QByteArray cipherMessage2 = rsacryptor::encrypt(pubKey2,message);
+    rsacryptor A,B;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    B.getNewRandomPrivateKey();
+    B.getPublicKeyFromPrivate();
+    QByteArray cipherMessage1 = A.encrypt(message);
+    QByteArray cipherMessage2 = B.encrypt(message);
     bool result = cipherMessage1 != cipherMessage2;
     QVERIFY2(result, "encrypted messages from diff keys are equal");
 }
 
 void EncryptionTests::RSAdifferentSignaturesFromDifferentKeys()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PrivateKey privKey2 = rsacryptor::getNewRandomPrivateKey();
-    QByteArray sign1 = rsacryptor::signMessage(message,privKey1);
-    QByteArray sign2 = rsacryptor::signMessage(message,privKey2);
+    rsacryptor A,B;
+    A.getNewRandomPrivateKey();
+    B.getNewRandomPrivateKey();
+    QByteArray sign1 = A.signMessage(message);
+    QByteArray sign2 = B.signMessage(message);
     bool res = sign1 != sign2;
     QVERIFY2(res, "signs from diff keys are equal");
 }
 
 void EncryptionTests::RSAsameSignaturesFromSameKeyAndMessage()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    QByteArray sign1 = rsacryptor::signMessage(message,privKey1);
-    QByteArray sign2 = rsacryptor::signMessage(message,privKey1);
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    QByteArray sign1 = A.signMessage(message);
+    QByteArray sign2 = A.signMessage(message);
     bool res = sign1 == sign2;
     QVERIFY2(res, "signs from same key are not equal");
 }
 
 void EncryptionTests::RSAdifferentSignatiresFromDifferentMessages()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
     char str[] = "second message";
     QByteArray message2(str,sizeof(str));
-    QByteArray sign1 = rsacryptor::signMessage(message,privKey1);
-    QByteArray sign2 = rsacryptor::signMessage(message2,privKey1);
+    QByteArray sign1 = A.signMessage(message);
+    QByteArray sign2 = A.signMessage(message2);
     bool res = sign1 != sign2;
     QVERIFY2(res, "signs from same key and diff messages are equal");
 }
 
 void EncryptionTests::RSAverifySignature()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey1 = rsacryptor::getPublicKeyFromPrivate(privKey1);
-    QByteArray sign1 = rsacryptor::signMessage(message,privKey1);
-    bool res = rsacryptor::verifyMessage(message,pubKey1,sign1);
+    rsacryptor A;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    QByteArray sign1 = A.signMessage(message);
+    bool res = A.verifyMessage(message,sign1);
     QVERIFY2(res, "verifier returned false, but must true");
 }
 
 void EncryptionTests::RSAverifySignatureWithOtherKey()
 {
-    CryptoPP::RSA::PrivateKey privKey1 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PrivateKey privKey2 = rsacryptor::getNewRandomPrivateKey();
-    CryptoPP::RSA::PublicKey pubKey2 = rsacryptor::getPublicKeyFromPrivate(privKey2);
-    QByteArray sign1 = rsacryptor::signMessage(message,privKey1);
-    bool res = rsacryptor::verifyMessage(message,pubKey2,sign1);
+    rsacryptor A,B;
+    A.getNewRandomPrivateKey();
+    A.getPublicKeyFromPrivate();
+    B.getNewRandomPrivateKey();
+    B.getPublicKeyFromPrivate();
+    QByteArray sign1 = A.signMessage(message);
+    bool res = B.verifyMessage(message,sign1);
     QVERIFY2(!res, "verifier returned true with false key");
 }
 
