@@ -17,14 +17,12 @@ TEMPLATE = app
 SOURCES += main.cpp \
     rsacryptor.cpp \
     aescryptor.cpp \
-    integerencoder.cpp \
     dhcryptor.cpp \
     shahasher.cpp
 
 HEADERS += \
     rsacryptor.h \
     aescryptor.h \
-    integerencoder.h \
     dhcryptor.h \
     shahasher.h
 
