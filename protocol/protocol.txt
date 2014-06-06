@@ -9,7 +9,7 @@ Client hello: Type 100, Length[2], Data(List of available protocols by version)
 Server hello: Type 101, Data(Protocol to use from the previos list)
 Server DH begin: Type 110, Length[2], Data(publicKey)[256], RSA signature Data [RSA signature Length]
 Client DH end: Type 111, Length[2], Data(publicKey)[Length==256]
-Data: Type 170, Length[2], Data[Length], HMAC(Data) 
+Data: Type 170, Length[2], Data[Length], HMAC(Encrypted Data) 
 
 Exchange:
 	Client													Server
