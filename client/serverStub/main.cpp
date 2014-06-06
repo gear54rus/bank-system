@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
     MyTcpServer serv;
     MyTcpClient client;
-    client.startConnection("127.0.0.1",9999);
+    client.startConnection("hq.zion54.net",8815);
     return a.exec();
 }
 

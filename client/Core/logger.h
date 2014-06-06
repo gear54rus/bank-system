@@ -1,0 +1,19 @@
+#ifndef LOGGER_H
+#define LOGGER_H
+
+#include <QObject>
+#include <iostream>
+
+class logger : public QObject
+{
+    Q_OBJECT
+public:
+    explicit logger(QObject *parent = 0);
+    void operator << (const QString& message);
+signals:
+    void newMessage(const QString& message);
+private slots:
+    void sendNewMessage(const QString& message);
+};
+
+#endif // LOGGER_H
