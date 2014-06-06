@@ -175,7 +175,7 @@ void EncryptionTests::RSAsaveLoadPrivateKey()
 
 void EncryptionTests::RSAsaveLoadPublicKey()
 {
-    std::string filename = "G:\\privKey";
+    std::string filename = "G:\\pubKey";
     rsacryptor A;
     A.getNewRandomPrivateKey();
     A.getPublicKeyFromPrivate();

@@ -10,6 +10,7 @@
 #include <iostream>
 
 using namespace std;
+USING_NAMESPACE(CryptoPP)
 
 int main(int argc, char *argv[])
 {

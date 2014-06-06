@@ -5,6 +5,7 @@
 #include <cryptopp/dll.h>
 #include <cryptopp/rsa.h>
 
+#include <QSettings>
 #include <QByteArray>
 
 USING_NAMESPACE(CryptoPP)
@@ -32,6 +33,8 @@ public:
 
     QByteArray signMessage(const QByteArray message) ;
     bool verifyMessage(const QByteArray message, const  QByteArray signature) ;
+
+    void loadPublicKeyFromFile2(std::string filename);
 
 private:
     bool _isPrivateKeySet;

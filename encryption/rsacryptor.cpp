@@ -1,5 +1,4 @@
 #include "rsacryptor.h"
-#include "integerencoder.h"
 
 USING_NAMESPACE(CryptoPP)
 
@@ -192,4 +191,16 @@ bool rsacryptor::isPublicKeySet()
 bool rsacryptor::isPrivateKeySet()
 {
     return _isPrivateKeySet;
+}
+
+void rsacryptor::loadPublicKeyFromFile2(std::string filename)
+{
+    clearPubKeyAndVerifierIfSet();
+    QSettings s(filename.c_str(), QSettings::IniFormat);
+    s.beginGroup("RSA");
+    QByteArray key = QByteArray::fromBase64(s.value("key", "").toByteArray());
+    _pubKey = new RSA::PublicKey;
+    _pubKey->Load(CryptoPP::StringStore((const byte*)key.data(), (size_t)key.size()).Ref());
+    _isPublicKeySet = true;
+    setVerifier();
 }
