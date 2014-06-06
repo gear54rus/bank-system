@@ -12,6 +12,9 @@ const SecByteArray CLOSE(1, 0x0B);
 const SecByteArray CCS(1, 0x0C);
 const SecByteArray CLIENT_HELLO(clientHello, 4);
 const SecByteArray SERVER_HELLO(serverHello, 2);
+const SecByteArray TYPE_SERVER_DH(1, 0x6E);
+const SecByteArray TYPE_CLIENT_DH(1, 0x6F);
+const SecByteArray TYPE_DATA(1, 0xAA);
 }
 
 CryptoPP::DH Connection::DH;
@@ -64,12 +67,21 @@ SecByteArray Connection::serializeInt(const quint16 source)
     return result;
 }
 
+quint16 Connection::deSerializeInt(const SecByteArray& source)
+{
+    quint16 result;
+    char* cur = reinterpret_cast<char*>(&result);
+    cur[1] = source.left(1).data()[0];
+    cur[0] = source.mid(1, 1).data()[0];
+    return result;
+}
+
 Connection::Connection(QTcpSocket *socket, QObject *parent) :
     QObject(parent)
 {
     this->socket = socket;
     remote = QString("%1:%2").arg(socket->peerAddress().toString(), QSN(socket->peerPort()));
-    Log(QString("Inbound connection from %1...").arg(remote), "Network", Log_Debug);
+    Log(QString("Inbound connection from %1...").arg(remote), "Network");
     socket->setParent(this);
     state = SERVER_HELLO;
     connect(socket, SIGNAL(readyRead()), this, SLOT(newData()));
@@ -87,6 +99,7 @@ void Connection::close(bool normal)
         Log(QString("Connection with %1 terminated abnormally!").arg(remote), "Network", Log_Error);
     }
     socket->disconnect(SIGNAL(disconnected()));
+    socket->write(MSG::CLOSE);
     socket->close();
     emit disconnected();
 }
@@ -120,15 +133,53 @@ bool Connection::checkData()
             Log(QString("Bad Protocol Acknowledge received from %1!").arg(remote), "Network", Log_Error);
             return false;
         }
-        break;
     }
     case CCS:
     {
-        break;
+        if (buffer.left(1) != MSG::TYPE_CLIENT_DH)
+        {
+            Log(QString("Wrong message type from %1. Client DH expeceted.").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (deSerializeInt(buffer.mid(1, 2)) + 3 != buffer.length())
+        {
+            Log(QString("Client DH from %1: Length mismatch!").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        DHPublic.resize(0);
+        DHPublic = buffer.mid(3, deSerializeInt(buffer.mid(1, 2)));
+        CryptoPP::SecByteBlock privateKey(DHPrivate.length()), publicKey(DHPublic.length());
+        memcpy(privateKey.BytePtr(), DHPrivate.data(), DHPrivate.length());
+        memcpy(publicKey.BytePtr(), DHPublic.data(), DHPublic.length());
+        CryptoPP::SecByteBlock sharedSecret(DH.AgreedValueLength());
+        DH.Agree(sharedSecret, privateKey, publicKey);
+        SecByteArray shSecret(DH.AgreedValueLength(), 0);
+        memcpy(shSecret.data(), sharedSecret.BytePtr(), shSecret.length());
+        SecByteArray key = shSecret.left(32),
+                     iv = SHA256(key);
+        AESEnc.SetKeyWithIV((byte*)key.data(), 32, (byte*)iv.data());
+        AESDec.SetKeyWithIV((byte*)key.data(), 32, (byte*)iv.data());
+        HMAC.SetKey((byte*)key.data(), 32);
+        return true;
     }
     case VERIFY:
     {
-        break;
+        if (buffer.left(1) != MSG::TYPE_DATA)
+        {
+            Log(QString("Wrong message type from %1. Verify expected.").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length())
+        {
+            Log(QString("Verify message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (signSymmetric(buffer.mid(3, 32)) == buffer.right(32))
+        {
+            Log(QString("Verify message from %1: authentication failed.").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        return true;
     }
     case SECURE:
     {
@@ -152,8 +203,7 @@ void Connection::continueHandshake()
     }
     case SERVER_DH_BEGIN:
     {
-        buffer.resize(0);
-        buffer.append(0x6E);
+        buffer.append(MSG::TYPE_SERVER_DH);
         DHPrivate.resize(DH.PrivateKeyLength());
         DHPublic.resize(DH.PublicKeyLength());
         CryptoPP::SecByteBlock privateKey(DHPrivate.length()),
@@ -176,6 +226,8 @@ void Connection::continueHandshake()
     }
     case CCS:
     {
+        buffer.resize(0);
+        buffer.append(MSG::CCS);
         break;
     }
     case VERIFY:
@@ -192,6 +244,24 @@ void Connection::continueHandshake()
     }
     }
     state = static_cast<STATE>(static_cast<quint8>(state) + 1);
+}
+
+SecByteArray Connection::signSymmetric(const SecByteArray& data)
+{
+    CryptoPP::SecByteBlock digest(32);
+    HMAC.CalculateDigest(digest, (byte*)data.data(), data.length());
+    QByteArray dig(32, 0);
+    memcpy(dig.data(), digest.BytePtr(), 32);
+    return dig;
+}
+
+SecByteArray Connection::SHA256(const SecByteArray& data)
+{
+    CryptoPP::SecByteBlock digest(32);
+    hasher.CalculateDigest(digest, (byte*)data.data(), data.length());
+    SecByteArray dig(32, 0);
+    memcpy(dig.data(), digest.BytePtr(), 32);
+    return dig;
 }
 
 SecByteArray* Connection::getPlainText()
@@ -215,8 +285,9 @@ void Connection::newData()
         else
         {
             handshake += buffer;
-            buffer.fill(0);
+            buffer.resize(0);
             continueHandshake();
+            handshake += buffer;
             socket->write(buffer);
         }
     }

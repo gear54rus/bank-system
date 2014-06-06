@@ -19,6 +19,7 @@ public:
     static SecByteArray getRSAPrivate();
     static SecByteArray getRSAPublic();
     static SecByteArray serializeInt(const quint16 source);
+    static quint16 deSerializeInt(const SecByteArray& source);
     explicit Connection(QTcpSocket* socket, QObject* parent = 0);
     STATE getState()
     {
@@ -35,8 +36,15 @@ private:
     SecByteArray handshake;
     SecByteArray DHPrivate;
     SecByteArray DHPublic;
+    SecByteArray DHSecret;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption AESDec;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption AESEnc;
+    CryptoPP::SHA256 hasher;
+    CryptoPP::HMAC<CryptoPP::SHA256> HMAC;
     bool checkData();
     void continueHandshake();
+    SecByteArray signSymmetric(const SecByteArray& data);
+    SecByteArray SHA256(const SecByteArray& data);
     SecByteArray* getPlainText();
 public slots:
     void close(bool normal = false);
