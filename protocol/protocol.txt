@@ -20,6 +20,7 @@ Ack			------------------------------------------->
 Client DH End -----------------------------------------> 
 			<------------------------------------------- Change cipher spec
 =====================Cipher: AES_CFB{Key: Trunc(32 of DH shared secret), IV: SHA256(Key)}================
+=====================Only Data block encrypted in data messages=========================================
 Data with SHA256(concat of all previous messages) ----->
 			<------------------------------------------- Data with SHA256(concat of ALL! previous messages, including previus concat)
 =====================Connection complete ===============================================
