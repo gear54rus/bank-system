@@ -7,8 +7,8 @@ Close: Type 11
 Change cipher spec: 12
 Client hello: Type 100, Length[2], Data(List of available protocols by version)
 Server hello: Type 101, Data(Protocol to use from the previos list)
-Server DH begin: Type 110, Length[2], Data(publicKey)[Length], RSA signature Length[2], RSA signature Data [RSA signature Length]
-Client DH end: Type 111, Length[2], Data(publicKey)[Length]
+Server DH begin: Type 110, Length[2], Data(publicKey)[256], RSA signature Data [RSA signature Length]
+Client DH end: Type 111, Length[2], Data(publicKey)[Length==256]
 Data: Type 170, Length[2], Data[Length], HMAC(Data) 
 
 Exchange:
