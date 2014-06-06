@@ -4,13 +4,13 @@ namespace MSG
 {
 namespace
 {
-char clientHello[] = {'a'};
+char clientHello[] = {0x64, 0x00, 0x01, 0x01};
 char serverHello[] = {0x65, 0x01};
 }
 const SecByteArray ACK(0x0A, 1);
 const SecByteArray CLOSE(0x0B, 1);
 const SecByteArray CCS(0x0C, 1);
-const SecByteArray CLIENT_HELLO(clientHello, 1);
+const SecByteArray CLIENT_HELLO(clientHello, 4);
 const SecByteArray SERVER_HELLO(serverHello, 2);
 }
 
@@ -70,31 +70,65 @@ void Connection::continueHandshake()
     case SERVER_HELLO:
     {
         socket->write(MSG::SERVER_HELLO);
+        break;
     }
     case SERVER_DH_BEGIN:
     {
+        break;
+    }
+    case CCS:
+    {
+        break;
+    }
+    case VERIFY:
+    {
+        break;
+    }
+    case SECURE:
+    {
+        break;
+    }
+    case DISCONNECTED:
+    {
+        Q_UNREACHABLE();
     }
     }
+    state = static_cast<STATE>(static_cast<quint8>(state) + 1);
 }
 
 SecByteArray* Connection::getPlainText()
 {
+    SecByteArray* result = new SecByteArray();
+    return result;
 }
 
 void Connection::newData()
 {
     buffer.fill(0);
     buffer = SecByteArray(socket->readAll());
-    if (!checkData())
+    if (state != SECURE)
     {
-        Log(QString("Handshake with %1:%2 failed: Bad message from client!").arg(socket->peerAddress().toString(), QSN(socket->peerPort())), "Network", Log_Error);
-    }
-    else if (state != SECURE)
-    {
-        continueHandshake();
+        if (!checkData())
+        {
+            Log(QString("Handshake with %1:%2 failed: Bad message from client!").arg(socket->peerAddress().toString(), QSN(socket->peerPort())), "Network", Log_Error);
+            close();
+        }
+        else
+        {
+            continueHandshake();
+        }
     }
     else
     {
+        if (!checkData())
+        {
+            Log(QString("Terminating authenticated connection with %1:%2: Bad message from client!").arg(socket->peerAddress().toString(), QSN(socket->peerPort())), "Network", Log_Error);
+            close();
+        }
+        else
+        {
+            emit received(getPlainText());
+        }
     }
 }
 

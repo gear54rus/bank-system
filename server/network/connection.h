@@ -13,7 +13,7 @@ class Connection: public QObject
 {
     Q_OBJECT
 public:
-    enum STATE {SERVER_HELLO, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};
+    enum STATE {SERVER_HELLO = 1, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};
     static void init();
     explicit Connection(QTcpSocket* socket, QObject* parent = 0);
     STATE getState()
