@@ -16,17 +16,20 @@ void NetworkManager::setMaxConnections(quint16 maxConnections)
 void NetworkManager::newConnection()
 {
     listener.pauseAccepting();
-    openConnections.insert(new Connection(listener.nextPendingConnection()));
+    Connection* newConnection = new Connection(listener.nextPendingConnection());
+    connect(newConnection, SIGNAL(disconnected()), this, SLOT(toDelete()), Qt::QueuedConnection);
+    openConnections.insert(newConnection);
     if (openConnections.size() < maxConnections)
     {
         listener.resumeAccepting();
     }
 }
 
-void NetworkManager::toDelete(Connection* connection)
+void NetworkManager::toDelete()
 {
-    openConnections.remove(connection);
-    connection->deleteLater();
+    Connection* sender = dynamic_cast<Connection*>(QObject::sender());
+    openConnections.remove(sender);
+    sender->deleteLater();
     if (openConnections.size() < maxConnections)
     {
         listener.resumeAccepting();

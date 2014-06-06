@@ -42,6 +42,7 @@ void Core::init()
             Log("Successfully connected to database!", "MySQL");
         }
         s.endGroup();
+        Connection::init();
         s.beginGroup("Network");
         {
             QHostAddress host = QHostAddress(s.value("bind_ip", "0.0.0.0").toString());

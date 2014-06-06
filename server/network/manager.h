@@ -27,7 +27,7 @@ signals:
 public slots:
 private slots:
     void newConnection();
-    void toDelete(Connection *connection);
+    void toDelete();
 };
 
 #endif // MANAGER_H
