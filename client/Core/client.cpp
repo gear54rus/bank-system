@@ -19,7 +19,11 @@ void Client::readyRead()
     int type;
     _log << "Client got message";
     QByteArray data = _socket->readAll();
-    _buffer.append(data);
+    // DIRTY HACH BIDLO CODE. FIX IT
+    if (_connectionState != CHECK_HASH_SENT)
+    {
+        _buffer.append(data);
+    }
     //if need to close
     if (data[0] == 11)
     {
@@ -86,7 +90,6 @@ void Client::readyRead()
         break;
     case CHECK_HASH_SENT:
     {
-        data = _aes.decrypt(data);
         QByteArray orData = data;
         orData.left(orData.length()-256);
         type = data[0];
@@ -95,9 +98,10 @@ void Client::readyRead()
         int length = lengthToBigEndian(dlen);
         data.remove(0,2);
         QByteArray concatHash = data.left(256);
+        QByteArray ourHmac = shahasher::hmac(_aesKey,concatHash);
+        concatHash = _aes.decrypt(concatHash);
         data.remove(0,256);
         QByteArray messageHmac = data;
-        QByteArray ourHmac = shahasher::hmac(_aesKey,orData);
         QByteArray ourHash = shahasher::hash(_buffer);
         if ((type != 170 ) || (ourHmac != messageHmac) || (ourHash != concatHash))
         {
@@ -176,11 +180,11 @@ void Client::tryNextStage()
     case CHANGE_CIPHER_SPEC_RECEIVED:
     {
         QByteArray message;
-        message.append(170);
-        message.append(lengthToLittleEndian(256));
-        message.append(shahasher::hash(_buffer));
-        message.append(shahasher::hmac(_aesKey,message));
-        message = _aes.encrypt(message);
+        message.append(0xAA);
+        QByteArray encryptedConcatHash = _aes.encrypt(shahasher::hash(_buffer));
+        message.append(lengthToLittleEndian(encryptedConcatHash.length()));
+        message.append(encryptedConcatHash);
+        message.append(shahasher::hmac(_aesKey,encryptedConcatHash));
         _buffer.append(message);
         _socket->write(message);
         changeState(CHECK_HASH_SENT);
