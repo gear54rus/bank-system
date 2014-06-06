@@ -42,7 +42,6 @@ void Core::init()
             Log("Successfully connected to database!", "MySQL");
         }
         s.endGroup();
-        Connection::init();
         s.beginGroup("Network");
         {
             QHostAddress host = QHostAddress(s.value("bind_ip", "0.0.0.0").toString());
@@ -64,6 +63,24 @@ void Core::init()
             }
             manager->moveToThread(new QThread(this));
             manager->thread()->start();
+        }
+        s.endGroup();
+        s.beginGroup("RSA");
+        {
+            SecByteArray key = SecByteArray::fromBase64(s.value("key", "").toByteArray());
+            if (!key.size())
+            {
+                Connection::init();
+                s.setValue("key", QString(Connection::getRSAPrivate().toBase64()));
+                s.setValue("public_key", QString(Connection::getRSAPublic().toBase64()));
+                s.sync();
+                Log("New RSA keypair was generated - check \"settings.ini\".", "Core", Log_Critical);
+            }
+            else
+            {
+                Connection::init(key);
+                Log("Using existing keypair...", "Core", Log_Message);
+            }
         }
     }
     catch (int)

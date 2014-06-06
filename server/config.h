@@ -5,4 +5,6 @@
 #define CORE_MYSQL_DEFAULT_PORT 3306
 #define LOGGER_DROP_NORMAL_MESSAGE_PREFIX //if defined, messages of level 0 will not have [MSG] prefix
 
+#define QT_NO_CAST_FROM_BYTEARRAY
+
 #endif // CONFIG_H

@@ -6,6 +6,7 @@
 #include "../global.h"
 #define CRYPTOPP_DEFAULT_NO_DLL
 #include <cryptopp/dll.h>
+#include <cryptopp/rsa.h>
 #include <QTcpSocket>
 #include <QHostAddress>
 
@@ -14,7 +15,10 @@ class Connection: public QObject
     Q_OBJECT
 public:
     enum STATE {SERVER_HELLO = 1, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};
-    static void init();
+    static void init(const SecByteArray& RSAPrivate = "");
+    static SecByteArray getRSAPrivate();
+    static SecByteArray getRSAPublic();
+    static SecByteArray serializeInt(const quint16 source);
     explicit Connection(QTcpSocket* socket, QObject* parent = 0);
     STATE getState()
     {
@@ -22,10 +26,15 @@ public:
     }
 private:
     static CryptoPP::DH DH;
-    CryptoPP::AutoSeededRandomPool rnd;
+    static CryptoPP::RSA::PrivateKey RSAPrivate;
+    static CryptoPP::AutoSeededRandomPool rnd;
     QTcpSocket* socket;
     STATE state;
+    QString remote;
     SecByteArray buffer;
+    SecByteArray handshake;
+    SecByteArray DHPrivate;
+    SecByteArray DHPublic;
     bool checkData();
     void continueHandshake();
     SecByteArray* getPlainText();

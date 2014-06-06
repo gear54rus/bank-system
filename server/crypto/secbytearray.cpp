@@ -1,9 +1,5 @@
 #include "secbytearray.h"
 
-SecByteArray::SecByteArray():
-    QByteArray()
-{
-}
 
 SecByteArray::~SecByteArray()
 {
@@ -16,8 +12,8 @@ void SecByteArray::resize(int size)
         size = 0;
     if (size < this->size())
     {
-        size_t diff = this->size() - size,
-               cSize = this->size();
+        quint64 diff = this->size() - size,
+                cSize = this->size();
         char* data = this->data();
         while (diff--)
         {
