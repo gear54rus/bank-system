@@ -229,6 +229,7 @@ void EncryptionTests::AESencryptionWithSameKeyIvAreSame()
 
 void EncryptionTests::AESrecoveredMessageIsEqualToOrigin()
 {
+    QByteArray message("коммандер же : 3 [14:50:43] Виталий !ZiP!: одной хватит [14:53:19] Дмитрий: надо бы скрайленды на замену вратам [14:53:25] Дмитрий: но они сука такие дорогие пздц [14:53:28] Дмитрий: по 10 баксов");
     QByteArray key1(32,0x0A);
     QByteArray iv1(16,0x10);
     aescryptor A(key1,iv1);

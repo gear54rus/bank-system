@@ -19,18 +19,20 @@ SOURCES += main.cpp \
     logger.cpp \
     client.cpp \
     clientcontroller.cpp \
-    ../../encryption/aescryptor.cpp \
-    ../../encryption/dhcryptor.cpp \
-    ../../encryption/rsacryptor.cpp \
-    ../../encryption/shahasher.cpp \
+    ../encryption/aescryptor.cpp \
+    ../encryption/dhcryptor.cpp \
+    ../encryption/rsacryptor.cpp \
+    ../encryption/shahasher.cpp \
+    connection.cpp
 
 HEADERS += \
     logger.h \
     client.h \
     clientcontroller.h \
-    ../../encryption/aescryptor.h \
-    ../../encryption/dhcryptor.h \
-    ../../encryption/rsacryptor.h \
-    ../../encryption/shahasher.h \
+    ../encryption/aescryptor.h \
+    ../encryption/dhcryptor.h \
+    ../encryption/rsacryptor.h \
+    ../encryption/shahasher.h \
+    connection.h
 
 LIBS += -lcryptopp562

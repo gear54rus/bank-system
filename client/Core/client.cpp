@@ -4,7 +4,7 @@ Client::Client(QString address, quint16 port, QString pubKeyPath, QObject *paren
     QObject(parent)
 {
     _socket = new QTcpSocket(this);
-    _connectionState = DISCONNECTED;
+    _connectionState = clS_DISCONNECTED;
     connect(_socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
     connect(this, SIGNAL(stateChanged()), this, SLOT(logNewState()));
     _address = address;
@@ -16,11 +16,11 @@ Client::Client(QString address, quint16 port, QString pubKeyPath, QObject *paren
 
 void Client::readyRead()
 {
-    int type;
+    unsigned char type;
     _log << "Client got message";
     QByteArray data = _socket->readAll();
     // DIRTY HACH BIDLO CODE. FIX IT
-    if (_connectionState != CHECK_HASH_SENT)
+    if (_connectionState != clS_CHECK_HASH_SENT)
     {
         _buffer.append(data);
     }
@@ -32,7 +32,7 @@ void Client::readyRead()
     }
     switch (_connectionState)
     {
-    case CLIENT_HELLO_SENT:
+    case clS_CLIENT_HELLO_SENT:
     {
         type = data[0];
         int protocol = data[1];
@@ -43,12 +43,12 @@ void Client::readyRead()
         }
         else
         {
-            _connectionState = SERVER_HELLO_RECEIVED;
+            _connectionState = clS_SERVER_HELLO_RECEIVED;
         }
         emit (stateChanged());
     }
         break;
-    case ACK_SENT:
+    case clS_ACK_SENT:
     {
         //check type
         type = data[0];
@@ -72,11 +72,12 @@ void Client::readyRead()
             return;
         }
         _aesKey = sharedSecret.left(32);
-        _aes.setKeyWithIV(_aesKey, shahasher::hash(sharedSecret));
-        changeState(SERVER_DH_RECEIVED);
+        QByteArray iv = shahasher::hash(sharedSecret);
+        _aes.setKeyWithIV(_aesKey, iv);
+        changeState(clS_SERVER_DH_RECEIVED);
     }
         break;
-    case CLIENT_DH_SENT:
+    case clS_CLIENT_DH_SENT:
     {
         type = data[0];
         if (type != 12)
@@ -85,10 +86,10 @@ void Client::readyRead()
             closeConnection();
             return;
         }
-        changeState(CHANGE_CIPHER_SPEC_RECEIVED);
+        changeState(clS_CHANGE_CIPHER_SPEC_RECEIVED);
     }
         break;
-    case CHECK_HASH_SENT:
+    case clS_CHECK_HASH_SENT:
     {
         QByteArray orData = data;
         orData.left(orData.length()-256);
@@ -97,10 +98,10 @@ void Client::readyRead()
         QByteArray dlen = data.left(2);
         int length = lengthToBigEndian(dlen);
         data.remove(0,2);
-        QByteArray concatHash = data.left(256);
+        QByteArray concatHash = data.left(32);
         QByteArray ourHmac = shahasher::hmac(_aesKey,concatHash);
         concatHash = _aes.decrypt(concatHash);
-        data.remove(0,256);
+        data.remove(0,32);
         QByteArray messageHmac = data;
         QByteArray ourHash = shahasher::hash(_buffer);
         if ((type != 170 ) || (ourHmac != messageHmac) || (ourHash != concatHash))
@@ -109,13 +110,13 @@ void Client::readyRead()
             closeConnection();
             return;
         }
-        changeState(SECURE_CONNECTION);
+        changeState(clS_SECURE_CONNECTION);
     }
         break;
 
     //end of switch
     }
-    if (_connectionState != DISCONNECTED)
+    if (_connectionState != clS_DISCONNECTED)
     {
         tryNextStage();
     }
@@ -125,7 +126,7 @@ void Client::tryNextStage()
 {
     switch (_connectionState)
     {
-        case DISCONNECTED:
+        case clS_DISCONNECTED:
     {
             _socket->connectToHost(_address, _port);
             if(!_socket->waitForConnected(5000))
@@ -145,49 +146,43 @@ void Client::tryNextStage()
                 clientHello.append(1);
                 _buffer.append(clientHello);
                 _socket->write(clientHello);
-                changeState(CLIENT_HELLO_SENT);
+                changeState(clS_CLIENT_HELLO_SENT);
             }
     }
             break;
-        case SERVER_HELLO_RECEIVED:
+        case clS_SERVER_HELLO_RECEIVED:
     {
             QByteArray ack;
             //type of message
             ack.append(10);
             _buffer.append(ack);
             _socket->write(ack);
-            changeState(ACK_SENT);
+            changeState(clS_ACK_SENT);
     }
         break;
-    case SERVER_DH_RECEIVED:
+    case clS_SERVER_DH_RECEIVED:
     {
         QByteArray message;
         message.append(111);
         message.append(lengthToLittleEndian(256));
         message.append(_dhPubKey);
-        //
-        //
-        //
-        //
-        //
-        //to delete
-        //message.append(7);
         _buffer.append(message);
         _socket->write(message);
-        changeState(CLIENT_DH_SENT);
+        changeState(clS_CLIENT_DH_SENT);
     }
         break;
-    case CHANGE_CIPHER_SPEC_RECEIVED:
+    case clS_CHANGE_CIPHER_SPEC_RECEIVED:
     {
         QByteArray message;
         message.append(0xAA);
-        QByteArray encryptedConcatHash = _aes.encrypt(shahasher::hash(_buffer));
+        QByteArray encryptedConcatHash = shahasher::hash(_buffer);
+        encryptedConcatHash = _aes.encrypt(encryptedConcatHash);
         message.append(lengthToLittleEndian(encryptedConcatHash.length()));
         message.append(encryptedConcatHash);
         message.append(shahasher::hmac(_aesKey,encryptedConcatHash));
         _buffer.append(message);
         _socket->write(message);
-        changeState(CHECK_HASH_SENT);
+        changeState(clS_CHECK_HASH_SENT);
     }
         break;
 
@@ -206,34 +201,34 @@ void Client::logNewState()
     QString mess;
     switch (_connectionState)
     {
-    case DISCONNECTED:
+    case clS_DISCONNECTED:
         mess = "client state: disconnected";
         break;
-    case CLIENT_HELLO_SENT:
+    case clS_CLIENT_HELLO_SENT:
         mess = "client state: CLIENT_HELLO_SENT";
         break;
-    case SERVER_HELLO_RECEIVED:
+    case clS_SERVER_HELLO_RECEIVED:
         mess = "client state: SERVER_HELLO_RECEIVED";
         break;
-    case ACK_SENT:
+    case clS_ACK_SENT:
         mess = "client state: ACK_SENT";
         break;
-    case SERVER_DH_RECEIVED:
+    case clS_SERVER_DH_RECEIVED:
         mess = "client state: SERVER_DH_RECEIVED";
         break;
-    case CLIENT_DH_SENT:
+    case clS_CLIENT_DH_SENT:
         mess = "client state: CLIENT_DH_SENT";
         break;
-    case CHANGE_CIPHER_SPEC_RECEIVED:
+    case clS_CHANGE_CIPHER_SPEC_RECEIVED:
         mess = "client state: CHANGE_CIPHER_SPEC_RECEIVED";
         break;
-    case CHECK_HASH_SENT:
+    case clS_CHECK_HASH_SENT:
         mess = "client state: CHECK_HASH_SENT";
         break;
-    case CHECK_HASH_RECEIVED:
+    case clS_CHECK_HASH_RECEIVED:
         mess = "client state: CHECK_HASH_RECEIVED";
         break;
-    case SECURE_CONNECTION:
+    case clS_SECURE_CONNECTION:
         mess = "client state: SECURE_CONNECTION";
         break;
     }
@@ -263,7 +258,7 @@ short int Client::lengthToBigEndian(QByteArray length)
 
 void Client::closeConnection(bool isByServer)
 {
-    changeState(DISCONNECTED);
+    changeState(clS_DISCONNECTED);
     _buffer.resize(0);
     if (!isByServer)
     {

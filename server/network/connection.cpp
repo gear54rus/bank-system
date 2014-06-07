@@ -99,7 +99,11 @@ void Connection::close(bool normal)
         Log(QString("Connection with %1 terminated abnormally!").arg(remote), "Network", Log_Error);
     }
     socket->disconnect(SIGNAL(disconnected()));
-    socket->write(MSG::CLOSE);
+    if (socket->state() == QTcpSocket::ConnectedState)
+    {
+        socket->write(MSG::CLOSE);
+        socket->waitForBytesWritten();
+    }
     socket->close();
     emit disconnected();
 }
@@ -323,6 +327,12 @@ void Connection::newData()
 {
     buffer.fill(0);
     buffer = socket->readAll();
+    if (buffer.left(1) == MSG::CLOSE)
+    {
+        Log(QString("Client %1 has requested to close the connection.").arg(remote), "Network", Log_Debug);
+        close(true);
+        return;
+    }
 #ifdef NETWORK_CONNECTION_DUMP
     Log(QString("(%1) %2 total").arg(QString(buffer.toHex()), QSN(buffer.size())), "Network", Log_Debug);
 #endif

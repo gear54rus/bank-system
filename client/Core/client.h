@@ -8,23 +8,23 @@
 
 #include <logger.h>
 
-#include "../../encryption/aescryptor.h"
-#include "../../encryption/rsacryptor.h"
-#include "../../encryption/dhcryptor.h"
-#include "../../encryption/shahasher.h"
+#include "../encryption/aescryptor.h"
+#include "../encryption/rsacryptor.h"
+#include "../encryption/dhcryptor.h"
+#include "../encryption/shahasher.h"
 
 enum clientState
 {
-    DISCONNECTED,
-    CLIENT_HELLO_SENT,
-    SERVER_HELLO_RECEIVED,
-    ACK_SENT,
-    SERVER_DH_RECEIVED,
-    CLIENT_DH_SENT,
-    CHANGE_CIPHER_SPEC_RECEIVED,
-    CHECK_HASH_SENT,
-    CHECK_HASH_RECEIVED,
-    SECURE_CONNECTION
+    clS_DISCONNECTED,
+    clS_CLIENT_HELLO_SENT,
+    clS_SERVER_HELLO_RECEIVED,
+    clS_ACK_SENT,
+    clS_SERVER_DH_RECEIVED,
+    clS_CLIENT_DH_SENT,
+    clS_CHANGE_CIPHER_SPEC_RECEIVED,
+    clS_CHECK_HASH_SENT,
+    clS_CHECK_HASH_RECEIVED,
+    clS_SECURE_CONNECTION
 };
 
 
@@ -33,6 +33,9 @@ class Client : public QObject
     Q_OBJECT
 public:
     explicit Client(QString address, quint16 port, QString pubKeyPath, QObject *parent = 0);
+    void tryToSetConnection();
+    bool isConnectionSecure();
+
 signals:
     void gotNewMessage(QString descrMessage);
     void stateChanged();
