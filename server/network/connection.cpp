@@ -156,7 +156,7 @@ bool Connection::checkData()
         SecByteArray shSecret(DH.AgreedValueLength(), 0);
         memcpy(shSecret.data(), sharedSecret.BytePtr(), shSecret.length());
         SecByteArray key = shSecret.left(32),
-                     iv = SHA256(key);
+                     iv = SHA256(shSecret);
         AESEnc.SetKeyWithIV((byte*)key.data(), 32, (byte*)iv.data());
         AESDec.SetKeyWithIV((byte*)key.data(), 32, (byte*)iv.data());
         HMAC.SetKey((byte*)key.data(), 32);
@@ -174,15 +174,35 @@ bool Connection::checkData()
             Log(QString("Verify message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (signSymmetric(buffer.mid(3, 32)) == buffer.right(32))
+        if (signSymmetric(buffer.mid(3, 32)) != buffer.right(32))
         {
             Log(QString("Verify message from %1: authentication failed.").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (AESDecrypt(buffer.mid(3, 32)) != SHA256(handshake))
+        {
+            Log(QString("Verify message from %1: Checksum failed, possible MITM.").arg(remote), "Network", Log_Error);
             return false;
         }
         return true;
     }
     case SECURE:
     {
+        if (buffer.left(1) != MSG::TYPE_DATA)
+        {
+            Log(QString("Wrong message type from %1. Data expected.").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length())
+        {
+            Log(QString("Data message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
+            return false;
+        }
+        if (signSymmetric(buffer.mid(3, 32)) != buffer.right(32))
+        {
+            Log(QString("Data message from %1: authentication failed.").arg(remote), "Network", Log_Error);
+            return false;
+        }
         break;
     }
     case DISCONNECTED:
@@ -228,15 +248,26 @@ void Connection::continueHandshake()
     {
         buffer.resize(0);
         buffer.append(MSG::CCS);
+        Log(QString("Change cipher spec sent to %1.").arg(remote), "Network", Log_Debug);
         break;
     }
     case VERIFY:
     {
+        buffer.append(MSG::TYPE_DATA);
+        buffer.append(serializeInt(32));
+        buffer.append(AESEncrypt(SHA256(handshake)));
+        buffer.append(signSymmetric(buffer.right(32)));
+        Log(QString("Veify sent to %1.").arg(remote), "Network", Log_Debug);
+        Log(QString("Connection with %1 is now secure!").arg(remote), "Network");
+        handshake.clear();
+        DHPrivate.clear();
+        DHPublic.clear();
+        DHSecret.clear();
         break;
     }
     case SECURE:
     {
-        break;
+        Q_UNREACHABLE();
     }
     case DISCONNECTED:
     {
@@ -246,11 +277,27 @@ void Connection::continueHandshake()
     state = static_cast<STATE>(static_cast<quint8>(state) + 1);
 }
 
+SecByteArray Connection::AESEncrypt(const SecByteArray& data)
+{
+    SecByteArray result;
+    result.resize(data.length());
+    AESEnc.ProcessData((byte*)result.data(), (byte*)data.data(), data.length());
+    return result;
+}
+
+SecByteArray Connection::AESDecrypt(const SecByteArray& data)
+{
+    SecByteArray result;
+    result.resize(data.length());
+    AESDec.ProcessData((byte*)result.data(), (byte*)data.data(), data.length());
+    return result;
+}
+
 SecByteArray Connection::signSymmetric(const SecByteArray& data)
 {
     CryptoPP::SecByteBlock digest(32);
     HMAC.CalculateDigest(digest, (byte*)data.data(), data.length());
-    QByteArray dig(32, 0);
+    SecByteArray dig(32, 0);
     memcpy(dig.data(), digest.BytePtr(), 32);
     return dig;
 }
@@ -267,6 +314,8 @@ SecByteArray Connection::SHA256(const SecByteArray& data)
 SecByteArray* Connection::getPlainText()
 {
     SecByteArray* result = new SecByteArray();
+    result->append(AESDecrypt(buffer.mid(3, deSerializeInt(buffer.mid(1, 2)))));
+    Log(QString("Received %1 bytes of data from %2.").arg(QSN(result->length()), remote));
     return result;
 }
 
@@ -274,7 +323,9 @@ void Connection::newData()
 {
     buffer.fill(0);
     buffer = socket->readAll();
+#ifdef NETWORK_CONNECTION_DUMP
     Log(QString("(%1) %2 total").arg(QString(buffer.toHex()), QSN(buffer.size())), "Network", Log_Debug);
+#endif
     if (state != SECURE)
     {
         if (!checkData())
@@ -295,7 +346,7 @@ void Connection::newData()
     {
         if (!checkData())
         {
-            Log(QString("Terminating authenticated connection with %1: Bad message from client!").arg(remote), "Network", Log_Error);
+            Log(QString("Secure connection with %1 was terminated: Bad message from client!").arg(remote), "Network", Log_Error);
             close();
         }
         else

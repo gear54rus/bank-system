@@ -37,12 +37,14 @@ private:
     SecByteArray DHPrivate;
     SecByteArray DHPublic;
     SecByteArray DHSecret;
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption AESDec;
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption AESEnc;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption AESEnc;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption AESDec;
     CryptoPP::SHA256 hasher;
     CryptoPP::HMAC<CryptoPP::SHA256> HMAC;
     bool checkData();
     void continueHandshake();
+    SecByteArray AESEncrypt(const SecByteArray& data);
+    SecByteArray AESDecrypt(const SecByteArray& data);
     SecByteArray signSymmetric(const SecByteArray& data);
     SecByteArray SHA256(const SecByteArray& data);
     SecByteArray* getPlainText();
