@@ -12,7 +12,6 @@ connection::connection(QString rsaPublicKeyPath, QString address , quint16 port,
     dhcryptor::initialize();
 }
 
-
 void connection::readyRead()
 {
     const QByteArray data = _socket->readAll();
@@ -29,7 +28,18 @@ void connection::readyRead()
     }
     if (_connectionState == SECURE_CONNECTION)
     {
-        //нет функционала
+        if (type != DATA)
+        {
+            closeConnection("received corrupted message");
+            return;
+        }
+        else
+        {
+            short unsigned int length = lengthToBigEndian(data.mid(1,2));
+            _buffer.append(data.mid(3,length));
+            _buffer = _aes.decrypt(_buffer);
+            emit( gotNewMessage());
+        }
     }
     else
     {
@@ -276,4 +286,24 @@ void connection::setConnection()
     }
     sendMessage(CLIENT_HELLO);
     changeState(CLIENT_HELLO_SENT);
+}
+
+bool connection::isConnectionSecured()
+{
+    return _connectionState == SECURE_CONNECTION;
+}
+
+bool connection::sendData(const QByteArray message)
+{
+    if (isConnectionSecured())
+    {
+        sendMessage(DATA,message);
+        return true;
+    }
+    return false;
+}
+
+QByteArray connection::getLastReceivedMessage()
+{
+    return _buffer;
 }

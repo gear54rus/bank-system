@@ -43,9 +43,10 @@ class connection : public QObject
 public:
     explicit connection(QString rsaPublicKeyPath, QString address = QString(), quint16 port = 0, QObject *parent = 0);
     void setConnection();
-    bool sendData(QByteArray message);
+    bool sendData(const QByteArray message);
     QByteArray getLastReceivedMessage();
 signals:
+    void gotNewMessage();
 private slots:
     void readyRead();
 private:
@@ -64,6 +65,7 @@ private:
     void closeConnection(QString reason, bool isByServer = false);
     bool checkMessage(const QByteArray message);
     bool sendMessage(messageTypes messageType,const QByteArray message = QByteArray());
+    bool isConnectionSecured();
 };
 
 #endif // CONNECTION_H
