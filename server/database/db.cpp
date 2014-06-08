@@ -2,7 +2,7 @@
 #include "../core/logger.h"
 #include <QSqlError>
 
-DBController::DBController(QObject *parent) :
+DBController::DBController(QObject* parent) :
     QObject(parent)
 {
     db = QSqlDatabase::addDatabase("QMYSQL");
@@ -15,12 +15,9 @@ bool DBController::connect(const QString& host, quint16 port, const QString& dbn
     db.setDatabaseName(dbname);
     db.setUserName(username);
     db.setPassword(password);
-    if (db.open())
-    {
+    if(db.open()) {
         return true;
-    }
-    else
-    {
+    } else {
         Log(db.lastError().databaseText(), "Database", Log_Critical);
         return false;
     }

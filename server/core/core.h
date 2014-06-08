@@ -6,8 +6,7 @@
 #include <QObject>
 #include <QCoreApplication>
 
-class Core : public QCoreApplication
-{
+class Core : public QCoreApplication {
     Q_OBJECT
 public:
     Core(int argc, char** argv);

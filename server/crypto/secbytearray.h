@@ -3,14 +3,13 @@
 
 #include <QByteArray>
 
-class SecByteArray : public QByteArray
-{
+class SecByteArray : public QByteArray {
 public:
     SecByteArray(): QByteArray() {}
-    SecByteArray(const char * data, int size = -1): QByteArray(data, size) {}
+    SecByteArray(const char* data, int size = -1): QByteArray(data, size) {}
     SecByteArray(int size, char ch): QByteArray(size, ch) {}
-    SecByteArray(const SecByteArray & other): QByteArray(other) {}
-    SecByteArray(const QByteArray & other): QByteArray(other) {}
+    SecByteArray(const SecByteArray& other): QByteArray(other) {}
+    SecByteArray(const QByteArray& other): QByteArray(other) {}
     ~SecByteArray();
     void resize(int size);
 };

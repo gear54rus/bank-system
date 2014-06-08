@@ -1,20 +1,18 @@
 #include "connection.h"
 
-namespace MSG
-{
-namespace
-{
-char clientHello[] = {0x64, 0x00, 0x01, 0x01};
-char serverHello[] = {0x65, 0x01};
-}
-const SecByteArray ACK(1, 0x0A);
-const SecByteArray CLOSE(1, 0x0B);
-const SecByteArray CCS(1, 0x0C);
-const SecByteArray CLIENT_HELLO(clientHello, 4);
-const SecByteArray SERVER_HELLO(serverHello, 2);
-const SecByteArray TYPE_SERVER_DH(1, 0x6E);
-const SecByteArray TYPE_CLIENT_DH(1, 0x6F);
-const SecByteArray TYPE_DATA(1, 0xAA);
+namespace MSG {
+    namespace {
+        char clientHello[] = {0x64, 0x00, 0x01, 0x01};
+        char serverHello[] = {0x65, 0x01};
+    }
+    const SecByteArray ACK(1, 0x0A);
+    const SecByteArray CLOSE(1, 0x0B);
+    const SecByteArray CCS(1, 0x0C);
+    const SecByteArray CLIENT_HELLO(clientHello, 4);
+    const SecByteArray SERVER_HELLO(serverHello, 2);
+    const SecByteArray TYPE_SERVER_DH(1, 0x6E);
+    const SecByteArray TYPE_CLIENT_DH(1, 0x6F);
+    const SecByteArray TYPE_DATA(1, 0xAA);
 }
 
 CryptoPP::DH Connection::DH;
@@ -26,12 +24,9 @@ void Connection::init(const SecByteArray& RSAPrivate)
     DH.AccessGroupParameters().Initialize(CryptoPP::Integer("0x87A8E61DB4B6663CFFBBD19C651959998CEEF608660DD0F25D2CEED4435E3B00E00DF8F1D61957D4FAF7DF4561B2AA3016C3D91134096FAA3BF4296D830E9A7C209E0C6497517ABD5A8A9D306BCF67ED91F9E6725B4758C022E0B1EF4275BF7B6C5BFC11D45F9088B941F54EB1E59BB8BC39A0BF12307F5C4FDB70C581B23F76B63ACAE1CAA6B7902D52526735488A0EF13C6D9A51BFA4AB3AD8347796524D8EF6A167B5A41825D967E144E5140564251CCACB83E6B486F6B3CA3F7971506026C0B857F689962856DED4010ABD0BE621C3A3960A54E710C375F26375D7014103A4B54330C198AF126116D2276E11715F693877FAD7EF09CADB094AE91E1A1597"),
                                           CryptoPP::Integer("0x8CF83642A709A097B447997640129DA299B1A47D1EB3750BA308B0FE64F5FBD3"),
                                           CryptoPP::Integer("0x3FB32C9B73134D0B2E77506660EDBD484CA7B18F21EF205407F4793A1A0BA12510DBC15077BE463FFF4FED4AAC0BB555BE3A6C1B0C6B47B1BC3773BF7E8C6F62901228F8C28CBB18A55AE31341000A650196F931C77A57F2DDF463E5E9EC144B777DE62AAAB8A8628AC376D282D6ED3864E67982428EBC831D14348F6F2F9193B5045AF2767164E1DFC967C1FB3F2E55A4BD1BFFE83B9C80D052B985D182EA0ADB2A3B7313D3FE14C8484B1E052588B9B7D2BBD2DF016199ECD06E1557CD0915B3353BBB64E0EC377FD028370DF92B52C7891428CDC67EB6184B523D1DB246C32F63078490F00EF8D647D148D47954515E2327CFEF98C582664B4C0F6CC41659"));
-    if (RSAPrivate != "")
-    {
+    if(RSAPrivate != "") {
         Connection::RSAPrivate.Load(CryptoPP::StringStore((const byte*)RSAPrivate.data(), (size_t)RSAPrivate.size()).Ref());
-    }
-    else
-    {
+    } else {
         rnd.Reseed();
         Connection::RSAPrivate.GenerateRandomWithKeySize(rnd, 2048);
     }
@@ -76,7 +71,7 @@ quint16 Connection::deSerializeInt(const SecByteArray& source)
     return result;
 }
 
-Connection::Connection(QTcpSocket *socket, QObject *parent) :
+Connection::Connection(QTcpSocket* socket, QObject* parent) :
     QObject(parent)
 {
     this->socket = socket;
@@ -90,17 +85,13 @@ Connection::Connection(QTcpSocket *socket, QObject *parent) :
 void Connection::close(bool normal)
 {
     state = DISCONNECTED;
-    if (normal)
-    {
+    if(normal) {
         Log(QString("Connection with remote host at %1 ened OK.").arg(remote), "Network");
-    }
-    else
-    {
+    } else {
         Log(QString("Connection with %1 terminated abnormally!").arg(remote), "Network", Log_Error);
     }
     socket->disconnect(SIGNAL(disconnected()));
-    if (socket->state() == QTcpSocket::ConnectedState)
-    {
+    if(socket->state() == QTcpSocket::ConnectedState) {
         socket->write(MSG::CLOSE);
         socket->waitForBytesWritten();
     }
@@ -110,43 +101,31 @@ void Connection::close(bool normal)
 
 bool Connection::checkData()
 {
-    switch (state)
-    {
-    case SERVER_HELLO:
-    {
-        if (buffer == MSG::CLIENT_HELLO)
-        {
+    switch(state) {
+    case SERVER_HELLO: {
+        if(buffer == MSG::CLIENT_HELLO) {
             Log(QString("Client Hello received from %1.").arg(remote), "Network", Log_Debug);
             return true;
-        }
-        else
-        {
+        } else {
             Log(QString("Bad Client Hello received from %1!").arg(remote), "Network", Log_Error);
             return false;
         }
     }
-    case SERVER_DH_BEGIN:
-    {
-        if (buffer == MSG::ACK)
-        {
+    case SERVER_DH_BEGIN: {
+        if(buffer == MSG::ACK) {
             Log(QString("Protocol Acknowledge received from %1.").arg(remote), "Network", Log_Debug);
             return true;
-        }
-        else
-        {
+        } else {
             Log(QString("Bad Protocol Acknowledge received from %1!").arg(remote), "Network", Log_Error);
             return false;
         }
     }
-    case CCS:
-    {
-        if (buffer.left(1) != MSG::TYPE_CLIENT_DH)
-        {
+    case CCS: {
+        if(buffer.left(1) != MSG::TYPE_CLIENT_DH) {
             Log(QString("Wrong message type from %1. Client DH expeceted.").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (deSerializeInt(buffer.mid(1, 2)) + 3 != buffer.length())
-        {
+        if(deSerializeInt(buffer.mid(1, 2)) + 3 != buffer.length()) {
             Log(QString("Client DH from %1: Length mismatch!").arg(remote), "Network", Log_Error);
             return false;
         }
@@ -166,67 +145,56 @@ bool Connection::checkData()
         HMAC.SetKey((byte*)key.data(), 32);
         return true;
     }
-    case VERIFY:
-    {
-        if (buffer.left(1) != MSG::TYPE_DATA)
-        {
+    case VERIFY: {
+        if(buffer.left(1) != MSG::TYPE_DATA) {
             Log(QString("Wrong message type from %1. Verify expected.").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length())
-        {
+        if(deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length()) {
             Log(QString("Verify message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (signSymmetric(buffer.mid(3, 32)) != buffer.right(32))
-        {
+        if(signSymmetric(buffer.mid(3, 32)) != buffer.right(32)) {
             Log(QString("Verify message from %1: authentication failed.").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (AESDecrypt(buffer.mid(3, 32)) != SHA256(handshake))
-        {
+        if(AESDecrypt(buffer.mid(3, 32)) != SHA256(handshake)) {
             Log(QString("Verify message from %1: Checksum failed, possible MITM.").arg(remote), "Network", Log_Error);
             return false;
         }
         return true;
     }
-    case SECURE:
-    {
-        if (buffer.left(1) != MSG::TYPE_DATA)
-        {
+    case SECURE: {
+        if(buffer.left(1) != MSG::TYPE_DATA) {
             Log(QString("Wrong message type from %1. Data expected.").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length())
-        {
+        if(deSerializeInt(buffer.mid(1, 2)) + 3 + 32 != buffer.length()) {
             Log(QString("Data message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
             return false;
         }
-        if (signSymmetric(buffer.mid(3, 32)) != buffer.right(32))
-        {
+        if(signSymmetric(buffer.mid(3, 32)) != buffer.right(32)) {
             Log(QString("Data message from %1: authentication failed.").arg(remote), "Network", Log_Error);
             return false;
         }
-        break;
+        return true;
     }
-    case DISCONNECTED:
-    {
+    case DISCONNECTED: {
         Q_UNREACHABLE();
     }
+    default:
+        Q_UNREACHABLE();
     }
 }
 void Connection::continueHandshake()
 {
-    switch (state)
-    {
-    case SERVER_HELLO:
-    {
+    switch(state) {
+    case SERVER_HELLO: {
         buffer = MSG::SERVER_HELLO;
         Log(QString("Server hello sent to %1.").arg(remote), "Network", Log_Debug);
         break;
     }
-    case SERVER_DH_BEGIN:
-    {
+    case SERVER_DH_BEGIN: {
         buffer.append(MSG::TYPE_SERVER_DH);
         DHPrivate.resize(DH.PrivateKeyLength());
         DHPublic.resize(DH.PublicKeyLength());
@@ -248,15 +216,13 @@ void Connection::continueHandshake()
         Log(QString("DH public key sent to %1.").arg(remote), "Network", Log_Debug);
         break;
     }
-    case CCS:
-    {
+    case CCS: {
         buffer.resize(0);
         buffer.append(MSG::CCS);
         Log(QString("Change cipher spec sent to %1.").arg(remote), "Network", Log_Debug);
         break;
     }
-    case VERIFY:
-    {
+    case VERIFY: {
         buffer.append(MSG::TYPE_DATA);
         buffer.append(serializeInt(32));
         buffer.append(AESEncrypt(SHA256(handshake)));
@@ -269,12 +235,10 @@ void Connection::continueHandshake()
         DHSecret.clear();
         break;
     }
-    case SECURE:
-    {
+    case SECURE: {
         Q_UNREACHABLE();
     }
-    case DISCONNECTED:
-    {
+    case DISCONNECTED: {
         Q_UNREACHABLE();
     }
     }
@@ -327,8 +291,7 @@ void Connection::newData()
 {
     buffer.fill(0);
     buffer = socket->readAll();
-    if (buffer.left(1) == MSG::CLOSE)
-    {
+    if(buffer.left(1) == MSG::CLOSE) {
         Log(QString("Client %1 has requested to close the connection.").arg(remote), "Network", Log_Debug);
         close(true);
         return;
@@ -336,31 +299,22 @@ void Connection::newData()
 #ifdef NETWORK_CONNECTION_DUMP
     Log(QString("(%1) %2 total").arg(QString(buffer.toHex()), QSN(buffer.size())), "Network", Log_Debug);
 #endif
-    if (state != SECURE)
-    {
-        if (!checkData())
-        {
+    if(state != SECURE) {
+        if(!checkData()) {
             Log(QString("Handshake with %1 failed: Bad message from client!").arg(remote), "Network", Log_Error);
             close();
-        }
-        else
-        {
+        } else {
             handshake += buffer;
             buffer.resize(0);
             continueHandshake();
             handshake += buffer;
             socket->write(buffer);
         }
-    }
-    else
-    {
-        if (!checkData())
-        {
+    } else {
+        if(!checkData()) {
             Log(QString("Secure connection with %1 was terminated: Bad message from client!").arg(remote), "Network", Log_Error);
             close();
-        }
-        else
-        {
+        } else {
             emit received(getPlainText());
         }
     }

@@ -10,8 +10,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 
-class Connection: public QObject
-{
+class Connection: public QObject {
     Q_OBJECT
 public:
     enum STATE {SERVER_HELLO = 1, SERVER_DH_BEGIN, CCS, VERIFY, SECURE, DISCONNECTED};

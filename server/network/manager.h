@@ -6,13 +6,12 @@
 #include <QObject>
 #include <QSet>
 
-class NetworkManager : public QObject
-{
+class NetworkManager : public QObject {
     Q_OBJECT
 public:
-    explicit NetworkManager(QObject *parent = 0);
+    explicit NetworkManager(QObject* parent = 0);
     void setMaxConnections(quint16 maxConnections);
-    bool listen(const QHostAddress & address = QHostAddress::Any, quint16 port = 0)
+    bool listen(const QHostAddress& address = QHostAddress::Any, quint16 port = 0)
     {
         return listener.listen(address, port);
     }
