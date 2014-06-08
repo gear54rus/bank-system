@@ -4,8 +4,6 @@
 #include <QObject>
 #include <QTcpSocket>
 
-#include <logger.h>
-
 #include "../encryption/aescryptor.h"
 #include "../encryption/rsacryptor.h"
 #include "../encryption/dhcryptor.h"
@@ -37,24 +35,35 @@ enum messageTypes
     DATA = 170
 };
 
+enum logMessageType
+{
+    DEBUG, INFO, WARNING, ERROR
+};
+
 class connection : public QObject
 {
     Q_OBJECT
 public:
-    explicit connection(QString rsaPublicKeyPath, QString address = QString(), quint16 port = 0, QObject *parent = 0);
+    explicit connection(QString rsaPublicKeyPath = QString(), QString address = QString(), quint16 port = 0, QObject *parent = 0);
+    ~connection();
+public slots:
+    void setRsaPublicKeyPath(QString rsaPublicKeyPath);
+    void setAddressAndPort(QString address, quint16 port);
     void setConnection();
     bool sendData(const QByteArray message);
+    void closeConnection(QString reason, bool isByServer = false);
     QByteArray getLastReceivedMessage();
 signals:
-    void gotNewMessage();
+    void connecionChangeSecureState(bool isSecure);
+    void gotNewMessage(QByteArray message);
+    void newLogMessage(logMessageType logLevel, QString logMessage);
 private slots:
     void readyRead();
 private:
     QTcpSocket* _socket;
     aescryptor _aes;
     rsacryptor _rsa;
-    QByteArray _aesKey;
-    logger _log;
+    shahasher _sha256;
     connectionState _connectionState;
     QString _address;
     quint16 _port;
@@ -62,7 +71,6 @@ private:
     QByteArray lengthToLittleEndian(short int length);
     short int lengthToBigEndian(QByteArray length);
     void changeState(connectionState newState);
-    void closeConnection(QString reason, bool isByServer = false);
     bool checkMessage(const QByteArray message);
     bool sendMessage(messageTypes messageType,const QByteArray message = QByteArray());
     bool isConnectionSecured();

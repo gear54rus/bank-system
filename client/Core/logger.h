@@ -10,10 +10,6 @@ class logger : public QObject
 public:
     explicit logger(QObject *parent = 0);
     void operator << (const QString& message);
-signals:
-    void newMessage(const QString& message);
-private slots:
-    void sendNewMessage(const QString& message);
 };
 
 #endif // LOGGER_H

@@ -1,14 +1,19 @@
 #include "connection.h"
 
+connection::~connection()
+{
+    _socket->close();
+    delete _socket;
+}
+
 connection::connection(QString rsaPublicKeyPath, QString address , quint16 port, QObject *parent):
     QObject(parent)
 {
     _socket = new QTcpSocket(this);
     _connectionState = DISCONNECTED;
     connect(_socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
-    _address = address;
-    _port = port;
-    _rsa.loadPublicKeyFromFile2(rsaPublicKeyPath.toStdString());
+    setAddressAndPort(address, port);
+    setRsaPublicKeyPath(rsaPublicKeyPath);
     dhcryptor::initialize();
 }
 
@@ -30,15 +35,15 @@ void connection::readyRead()
     {
         if (type != DATA)
         {
-            closeConnection("received corrupted message");
+            emit (newLogMessage(ERROR, "Got corrupted message in secure connection"));
             return;
         }
         else
         {
             short unsigned int length = lengthToBigEndian(data.mid(1,2));
-            _buffer.append(data.mid(3,length));
+            _buffer = data.mid(3,length);
             _buffer = _aes.decrypt(_buffer);
-            emit( gotNewMessage());
+            emit( gotNewMessage(_buffer));
         }
     }
     else
@@ -72,9 +77,10 @@ void connection::readyRead()
             QByteArray myDhPrivateKey, myDhPublicKey;
             dhcryptor::getKeyPair(myDhPrivateKey,myDhPublicKey);
             QByteArray sharedSecret = dhcryptor::getSharedSecret(myDhPrivateKey,serverDhPublicKey);
-            _aesKey = sharedSecret.left(32);
-            QByteArray iv = shahasher::hash(sharedSecret);
+            QByteArray _aesKey = sharedSecret.left(32);
+            QByteArray iv = _sha256.hash(sharedSecret);
             _aes.setKeyWithIV(_aesKey,iv);
+            _sha256.setKeyToHmac(_aesKey);
             _buffer.append(data);
             sendMessage(CLIENT_DH_END, myDhPublicKey);
             changeState(CLIENT_DH_SENT);
@@ -89,7 +95,7 @@ void connection::readyRead()
             }
             changeState(CHANGE_CIPHER_SPEC_RECEIVED);
             _buffer.append(data);
-            sendMessage(DATA, shahasher::hash(_buffer));
+            sendMessage(DATA, _sha256.hash(_buffer));
             changeState(CHECK_HASH_SENT);
         }
             break;
@@ -105,7 +111,7 @@ void connection::readyRead()
             short unsigned int dataLength = lengthToBigEndian(data.mid(1,2));
             QByteArray serverHash = data.mid(3,32);
             serverHash = _aes.decrypt(serverHash);
-            QByteArray ourHash = shahasher::hash(_buffer);
+            QByteArray ourHash = _sha256.hash(_buffer);
             if (!(ourHash == serverHash))
             {
                 closeConnection("check hashes failed");
@@ -123,18 +129,17 @@ void connection::readyRead()
 
 void connection::closeConnection(QString reason, bool isByServer)
 {
-    changeState(DISCONNECTED);
     _buffer.resize(0);
     if (!isByServer)
     {
-        QByteArray message(1,11);
-        _socket->write(message);
-        _log << "client closed connection: " + reason;
+        sendMessage(CLOSE);
+        emit(newLogMessage(WARNING, "client closed connection: " + reason));
     }
     else
     {
-        _log << "server closed connection";
+        emit(newLogMessage(WARNING, "server closed connection: " + reason));
     }
+    changeState(DISCONNECTED);
     _socket->close();
 }
 
@@ -186,7 +191,7 @@ bool connection::checkMessage(const QByteArray message)
         break;
     case DATA:
         length = lengthToBigEndian(message.mid(1,2));
-        return ((message.length() == length + 35) && (shahasher::hmac(_aesKey,message.mid(3,32)) == message.mid(35,32)));
+        return ((message.length() == length + 35) && (_sha256.hmac(message.mid(3,32)) == message.mid(35,32)));
         break;
     default:
         return false;
@@ -223,7 +228,7 @@ bool connection::sendMessage(messageTypes messageType, const QByteArray message)
         QByteArray encryptedMessage = _aes.encrypt(message);
         data.append(lengthToLittleEndian(encryptedMessage.length()));
         data.append(encryptedMessage);
-        data.append(shahasher::hmac(_aesKey, encryptedMessage));
+        data.append(_sha256.hmac(encryptedMessage));
     }
         break;
     default:
@@ -238,6 +243,10 @@ bool connection::sendMessage(messageTypes messageType, const QByteArray message)
 void connection::changeState(connectionState newState)
 {
     QString mess;
+    if ((_connectionState == SECURE_CONNECTION) && (newState != SECURE_CONNECTION))
+    {
+        emit (connecionChangeSecureState(false));
+    }
     _connectionState = newState;
     switch (_connectionState)
     {
@@ -270,9 +279,10 @@ void connection::changeState(connectionState newState)
         break;
     case SECURE_CONNECTION:
         mess = "client state: SECURE_CONNECTION";
+        emit (connecionChangeSecureState(true));
         break;
     }
-    _log << mess;
+    emit (newLogMessage(DEBUG, mess));
 }
 
 void connection::setConnection()
@@ -280,8 +290,7 @@ void connection::setConnection()
     _socket->connectToHost(_address, _port);
     if(!_socket->waitForConnected(5000))
     {
-        _log << "Client can't connect or timeouted";
-        _log << _socket->errorString();
+        emit (newLogMessage(ERROR, _socket->errorString()));
         return;
     }
     sendMessage(CLIENT_HELLO);
@@ -297,7 +306,7 @@ bool connection::sendData(const QByteArray message)
 {
     if (isConnectionSecured())
     {
-        sendMessage(DATA,message);
+        sendMessage(DATA, message);
         return true;
     }
     return false;
@@ -306,4 +315,37 @@ bool connection::sendData(const QByteArray message)
 QByteArray connection::getLastReceivedMessage()
 {
     return _buffer;
+}
+
+void connection::setRsaPublicKeyPath(QString rsaPublicKeyPath)
+{
+    // instead of norm test path
+    if (rsaPublicKeyPath.size() == 0)
+    {
+        emit (newLogMessage(ERROR, "RSA Public Key Path is not set"));
+        return;
+    }
+    if (_connectionState != DISCONNECTED)
+    {
+        closeConnection("set new RSA Public Key");
+    }
+    _rsa.loadPublicKeyFromFile2(rsaPublicKeyPath.toStdString());
+    //to delete
+    int b =2;
+    b++;
+}
+
+void connection::setAddressAndPort(QString address, quint16 port)
+{
+    if ((address.size() == 0) || (port == 0))
+    {
+        emit (newLogMessage(ERROR, "Address and port are not set"));
+        return;
+    }
+    if (_connectionState != DISCONNECTED)
+    {
+        closeConnection("set new address and port");
+    }
+    _address = address;
+    _port = port;
 }

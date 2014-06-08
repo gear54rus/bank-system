@@ -13,8 +13,13 @@ class shahasher
 {
 public:
     shahasher();
-    static QByteArray hash(QByteArray data);
-    static QByteArray hmac(QByteArray key,QByteArray data);
+    QByteArray hash(QByteArray data);
+    QByteArray hmac(QByteArray data);
+    QByteArray hmac(QByteArray key, QByteArray data);
+    void setKeyToHmac(QByteArray key);
+private:
+    CryptoPP::HMAC < CryptoPP::SHA256 > hmacer;
+    CryptoPP::SHA256 hasher;
 };
 
 #endif // SHAHASHER_H
