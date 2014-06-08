@@ -67,13 +67,11 @@ void Core::init()
         s.endGroup();
         s.beginGroup("RSA");
         {
-            SecByteArray key = SecByteArray::fromBase64(s.value("key", "").toByteArray());
+            SecByteArray key = SecByteArray::fromBase64(s.value("private_key", "").toByteArray());
             if (!key.size())
             {
                 Connection::init();
-                s.setValue("key", QString(Connection::getRSAPrivate().toBase64()));
-                s.setValue("public_key", QString(Connection::getRSAPublic().toBase64()));
-                s.sync();
+                s.setValue("private_key", QString(Connection::getRSAPrivate().toBase64()));
                 Log("New RSA keypair was generated - check \"settings.ini\".", "Core", Log_Critical);
             }
             else
@@ -81,6 +79,8 @@ void Core::init()
                 Connection::init(key);
                 Log("Using existing keypair...", "Core", Log_Message);
             }
+            s.setValue("public_key", QString(Connection::getRSAPublic().toBase64()));
+            s.sync();
         }
     }
     catch (int)
