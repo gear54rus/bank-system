@@ -104,6 +104,10 @@ void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
     {
         changeClientState(ClientStates::DISCONNECTED);
     }
+    if (logMessage.indexOf(QString("disconnected")))
+    {
+        changeClientState(ClientStates::DISCONNECTED);
+    }
     if (logLevel >= ui->cbFilter->currentIndex())
     {
         QString message;
