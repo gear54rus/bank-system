@@ -40,6 +40,7 @@ enum logMessageType
     DEBUG, INFO, WARNING, ERROR
 };
 
+
 class connection : public QObject
 {
     Q_OBJECT

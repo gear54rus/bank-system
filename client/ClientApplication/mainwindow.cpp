@@ -1,17 +1,21 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+using namespace ClientStates;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->lConnectionState->setStyleSheet("QLabel { color : red; }");
+
+
     ui->cbFilter->addItem("DEBUG");
     ui->cbFilter->addItem("INFO");
     ui->cbFilter->addItem("WARNING");
     ui->cbFilter->addItem("ERROR");
-    _clientState = UNLOGINED;
+
+    changeClientState(ClientStates::DISCONNECTED);
 
     //пробуем другой тред, пух.
     _connectionThread = new QThread();
@@ -40,13 +44,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    //delete _connection;
-    _connectionThread->exit();
-    delete _connectionThread;
-    delete ui;
-
-
-
+    _connectionThread->quit();
+    _connectionThread->deleteLater();
+    _connection->deleteLater();
 }
 
 void MainWindow::on_bOpenPubkeyFile_clicked()
@@ -60,55 +60,75 @@ void MainWindow::on_pClose_clicked()
     this->close();
 }
 
-
 void MainWindow::gotNewMessage(QByteArray message)
 {
     switch (_clientState)
     {
-    case UNLOGINED:
+    case ClientStates::DISCONNECTED:
         break;
-    case LOGINING:
+    case ClientStates::CONNECTING:
+        break;
+    case ClientStates::SECURE_CONNECTION:
+        break;
+    case ClientStates::LOGINING:
     {
         QString str(message);
         if (str.indexOf(QString("success")))
         {
-            changeClientState(LOGINED);
+            changeClientState(ClientStates::LOGINED);
             QByteArray message;
             message.append("balance get;");
             emit(sendData(message));
         }
+        else
+        {
+            newLogMessage(ERROR,"login failed: " + str);
+            changeClientState(ClientStates::SECURE_CONNECTION);
+        }
 
     }
         break;
-    case LOGINED:
+    case ClientStates::LOGINED:
+    {
+        //DELETE IT
+        newLogMessage(DEBUG, message);
+    }
         break;
+    //end of switch
     }
 }
 
 void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
 {
+    if (logMessage == "Socket operation timed out")
+    {
+        changeClientState(ClientStates::DISCONNECTED);
+    }
     if (logLevel >= ui->cbFilter->currentIndex())
     {
-        ui->logBrowser->append(logMessage);
+        QString message;
+        switch(logLevel)
+        {
+        case DEBUG:
+            message.append("DEBUG: ");
+            break;
+        case INFO:
+            message.append("INFO: ");
+            break;
+        case WARNING:
+            message.append("WARNING: ");
+            break;
+        case ERROR:
+            message.append("ERROR: ");
+            break;
+        }
+        ui->logBrowser->append(message.append(logMessage));
     }
 }
 
 void MainWindow::connectionSecureStateChanged(bool isSecure)
 {
-    if (isSecure)
-    {
-        ui->lConnectionState->setStyleSheet("QLabel { color : green; }");
-        if (_clientState == UNLOGINED)
-        {
-            QByteArray message;
-            message.append("login ").append(ui->eLogin->text()).append((" ")).append(ui->ePassword->text()).append(";");
-            emit (sendData(message));
-        }
-    }
-    else
-    {
-        ui->lConnectionState->setStyleSheet("QLabel { color : red; }");
-    }
+    isSecure? changeClientState(ClientStates::SECURE_CONNECTION) : changeClientState(ClientStates::DISCONNECTED);
 }
 
 
@@ -116,25 +136,142 @@ void MainWindow::connectionSecureStateChanged(bool isSecure)
 void MainWindow::changeClientState(ClientState newState)
 {
     _clientState = newState;
-    QString mess;
+    QString status;
     switch (_clientState)
     {
-    case UNLOGINED:
-        mess ="client is unlogined";
+    case ClientStates::DISCONNECTED:
+        status = "disconnected";
+        ui->bLogin->setText("Set connection");
+        ui->bLogin->setEnabled(true);
+
+        setLoginSettingsEnabled(false);
+
+        setConnectionSettingsEnabled(true);
+
+        setAccountActionsEnabled(false);
+
+        ui->lClientStatus->setStyleSheet("QLabel { color : red; }");
+        ui->lClientStatus->setText("Client status: disconnected");
+
         break;
-    case LOGINING:
-        mess = "client is logining";
+    case ClientStates::CONNECTING:
+        status = "connecting";
+
+        ui->bLogin->setEnabled(false);
+        ui->bOpenPubkeyFile->setEnabled(false);
+
+        setConnectionSettingsEnabled(false);
+
+        ui->lClientStatus->setText("Client status: connecting");
+        ui->lClientStatus->setStyleSheet("QLabel { color : orange; }");
+
         break;
-    case LOGINED:
-        mess = "client is logined";
+    case ClientStates::SECURE_CONNECTION:
+        status = "connected";
+
+        ui->bLogin->setText("Login");
+        ui->bLogin->setEnabled(true);
+
+        setLoginSettingsEnabled(true);
+
+        ui->lClientStatus->setText("Client status: connected");
+        ui->lClientStatus->setStyleSheet("QLabel { color : purple; }");
+
+        break;
+    case ClientStates::LOGINING:
+        status = "logining";
+
+        ui->bLogin->setEnabled("false");
+
+        setLoginSettingsEnabled(false);
+
+        ui->lClientStatus->setText("Client status: logining");
+        ui->lClientStatus->setStyleSheet("QLabel { color : purple; }");
+        break;
+    case ClientStates::LOGINED:
+        status = "logined";
+
+        ui->bLogin->setEnabled(true);
+        ui->bLogin->setText("Logout");
+
+        setAccountActionsEnabled(true);
+
+        ui->lClientStatus->setText("Client status: logined");
+        ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
         break;
     }
-    newLogMessage(INFO, mess);
+    newLogMessage(INFO, "client is " + status);
 }
 
 void MainWindow::on_bLogin_clicked()
 {
-    emit(setRsaPublicKeyPath(ui->ePubkeyPath->text()));
-    emit(setAddressAndPort(ui->eAddress->text(),ui->ePort->text().toUShort()));
-    emit(setConnection());
+    switch (_clientState)
+    {
+    case ClientStates::DISCONNECTED:
+        changeClientState(CONNECTING);
+        emit(setRsaPublicKeyPath(ui->ePubkeyPath->text()));
+        emit(setAddressAndPort(ui->eAddress->text(),ui->ePort->text().toUShort()));
+        emit(setConnection());
+        break;
+    case ClientStates::CONNECTING:
+        break;
+    case ClientStates::SECURE_CONNECTION:
+    {
+        QByteArray message;
+        message.append("login ").append(ui->eLogin->text()).append((" ")).append(ui->ePassword->text()).append(";");
+        emit (sendData(message));
+        changeClientState(LOGINING);
+    }
+        break;
+    case ClientStates::LOGINED:
+        emit(sendData("logout"));
+        changeClientState(ClientStates::SECURE_CONNECTION);
+        break;
+    }
+
+}
+
+void MainWindow::on_bAdd_clicked()
+{
+    QByteArray message;
+    message.append("balance alter +").append(ui->eMoney->text().append(";"));
+    emit(sendData(message));
+    newLogMessage(DEBUG,"balance alter + is sent: " + message);
+}
+
+void MainWindow::on_bSub_clicked()
+{
+    QByteArray message;
+    message.append("balance alter -").append(ui->eMoney->text().append(";"));
+    emit(sendData(message));
+    newLogMessage(DEBUG,"balance alter - is sent: " + message);
+}
+
+
+void MainWindow::setConnectionSettingsEnabled(bool enable)
+{
+    ui->eAddress->setReadOnly(!enable);
+    ui->ePort->setReadOnly(!enable);
+    ui->ePubkeyPath->setReadOnly(!enable);
+    ui->bOpenPubkeyFile->setEnabled(enable);
+}
+
+void MainWindow::setAccountActionsEnabled(bool enable)
+{
+    ui->eMoney->setReadOnly(!enable);
+    ui->bAdd->setEnabled(enable);
+    ui->bSub->setEnabled(enable);
+}
+
+void MainWindow::setLoginSettingsEnabled(bool enable)
+{
+    ui->eLogin->setReadOnly(!enable);
+    ui->ePassword->setReadOnly(!enable);
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    QByteArray mess;
+    mess.append(ui->lineEdit->text());
+    emit (sendData(mess));
 }

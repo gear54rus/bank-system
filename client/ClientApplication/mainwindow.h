@@ -12,12 +12,17 @@ namespace Ui {
 class MainWindow;
 }
 
-enum ClientState
+namespace ClientStates
 {
-    UNLOGINED, LOGINING, LOGINED
-};
+    enum ClientState
+    {
+        DISCONNECTED, CONNECTING, SECURE_CONNECTION, LOGINING, LOGINED
+    };
+}
 
-Q_DECLARE_METATYPE( ClientState );
+using namespace ClientStates;
+
+Q_DECLARE_METATYPE( ClientStates::ClientState );
 
 class MainWindow : public QMainWindow
 {
@@ -41,12 +46,22 @@ private slots:
     void on_pClose_clicked();
     void on_bLogin_clicked();
 
+    void on_bAdd_clicked();
+
+    void on_bSub_clicked();
+
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     ClientState _clientState;
     void changeClientState(ClientState newState);
     QThread* _connectionThread;
     connection* _connection;
+
+    void setConnectionSettingsEnabled(bool enable);
+    void setAccountActionsEnabled(bool enable);
+    void setLoginSettingsEnabled(bool enable);
 };
 
 #endif // MAINWINDOW_H

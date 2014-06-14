@@ -251,34 +251,34 @@ void connection::changeState(connectionState newState)
     switch (_connectionState)
     {
     case DISCONNECTED:
-        mess = "client state: disconnected";
+        mess = "connection state: disconnected";
         break;
     case CLIENT_HELLO_SENT:
-        mess = "client state: CLIENT_HELLO_SENT";
+        mess = "connection state: CLIENT_HELLO_SENT";
         break;
     case SERVER_HELLO_RECEIVED:
-        mess = "client state: SERVER_HELLO_RECEIVED";
+        mess = "connection state: SERVER_HELLO_RECEIVED";
         break;
     case ACK_SENT:
-        mess = "client state: ACK_SENT";
+        mess = "connection state: ACK_SENT";
         break;
     case SERVER_DH_RECEIVED:
-        mess = "client state: SERVER_DH_RECEIVED";
+        mess = "connection state: SERVER_DH_RECEIVED";
         break;
     case CLIENT_DH_SENT:
-        mess = "client state: CLIENT_DH_SENT";
+        mess = "connection state: CLIENT_DH_SENT";
         break;
     case CHANGE_CIPHER_SPEC_RECEIVED:
-        mess = "client state: CHANGE_CIPHER_SPEC_RECEIVED";
+        mess = "connection state: CHANGE_CIPHER_SPEC_RECEIVED";
         break;
     case CHECK_HASH_SENT:
-        mess = "client state: CHECK_HASH_SENT";
+        mess = "connection state: CHECK_HASH_SENT";
         break;
     case CHECK_HASH_RECEIVED:
-        mess = "client state: CHECK_HASH_RECEIVED";
+        mess = "connection state: CHECK_HASH_RECEIVED";
         break;
     case SECURE_CONNECTION:
-        mess = "client state: SECURE_CONNECTION";
+        mess = "connection state: SECURE_CONNECTION";
         emit (connecionChangeSecureState(true));
         break;
     }
