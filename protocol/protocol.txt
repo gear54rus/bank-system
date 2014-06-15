@@ -24,3 +24,14 @@ Client DH End ----------------------------------------->
 Data with SHA256(concat of all previous messages) ----->
 			<------------------------------------------- Data with SHA256(concat of ALL! previous messages, including previus concat)
 =====================Connection complete ===============================================
+
+Text protocol:
+
+S login:
+C login uname pwd;
+S code 0; | code 1 <reason>;
+S command:
+C balance alter 0;
+S code 0 +4060; | code 1 <reason>;
+S command:
+C disconnect;

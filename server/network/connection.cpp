@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "../config.h"
 
 namespace MSG {
     namespace {
@@ -17,6 +18,7 @@ namespace MSG {
 
 CryptoPP::DH Connection::DH;
 CryptoPP::RSA::PrivateKey Connection::RSAPrivate;
+CryptoPP::SHA256 Connection::hasher;
 CryptoPP::AutoSeededRandomPool Connection::rnd;
 
 void Connection::init(const SecByteArray& RSAPrivate)
@@ -93,7 +95,7 @@ void Connection::close(bool normal)
     socket->disconnect(SIGNAL(disconnected()));
     if(socket->state() == QTcpSocket::ConnectedState) {
         socket->write(MSG::CLOSE);
-        socket->waitForBytesWritten();
+        socket->flush();
     }
     socket->close();
     emit disconnected();
@@ -173,7 +175,7 @@ bool Connection::checkData()
             Log(QString("Data message from %1: Length mismatch!").arg(remote), "Network", Log_Error);
             return false;
         }
-        if(signSymmetric(buffer.mid(3, 32)) != buffer.right(32)) {
+        if(signSymmetric(buffer.mid(3, deSerializeInt(buffer.mid(1, 2)))) != buffer.right(32)) {
             Log(QString("Data message from %1: authentication failed.").arg(remote), "Network", Log_Error);
             return false;
         }
@@ -284,6 +286,9 @@ SecByteArray* Connection::getPlainText()
     SecByteArray* result = new SecByteArray();
     result->append(AESDecrypt(buffer.mid(3, deSerializeInt(buffer.mid(1, 2)))));
     Log(QString("Received %1 bytes of data from %2.").arg(QSN(result->length()), remote));
+#ifdef NETWORK_DATA_DUMP
+    Log(QString("(%1) %2 total").arg(QString(*result), QSN(result->size())), "Network", Log_Debug);
+#endif
     return result;
 }
 
@@ -296,7 +301,7 @@ void Connection::newData()
         close(true);
         return;
     }
-#ifdef NETWORK_CONNECTION_DUMP
+#ifdef NETWORK_HANDSHAKE_DUMP
     Log(QString("(%1) %2 total").arg(QString(buffer.toHex()), QSN(buffer.size())), "Network", Log_Debug);
 #endif
     if(state != SECURE) {
@@ -309,6 +314,10 @@ void Connection::newData()
             continueHandshake();
             handshake += buffer;
             socket->write(buffer);
+            socket->flush();
+        }
+        if(state == SECURE) {
+            emit secured();
         }
     } else {
         if(!checkData()) {
@@ -318,4 +327,17 @@ void Connection::newData()
             emit received(getPlainText());
         }
     }
+}
+
+void Connection::send(SecByteArray* data)
+{
+    buffer.resize(0);
+    buffer.append(MSG::TYPE_DATA);
+    SecByteArray ciphertext = AESEncrypt(*data);
+    buffer.append(serializeInt(ciphertext.length()));
+    buffer.append(ciphertext);
+    buffer.append(signSymmetric(ciphertext));
+    socket->write(buffer);
+    socket->flush();
+    delete data;
 }

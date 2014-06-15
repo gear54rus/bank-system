@@ -18,18 +18,22 @@ void NetworkManager::newConnection()
     listener.pauseAccepting();
     Connection* newConnection = new Connection(listener.nextPendingConnection());
     connect(newConnection, SIGNAL(disconnected()), this, SLOT(toDelete()), Qt::QueuedConnection);
+    connect(newConnection, SIGNAL(secured()), this, SLOT(secured()), Qt::QueuedConnection);
     openConnections.insert(newConnection);
     if(openConnections.size() < maxConnections) {
         listener.resumeAccepting();
     }
 }
-
-void NetworkManager::toDelete()
+void NetworkManager::secured()
 {
-    Connection* sender = dynamic_cast<Connection*>(QObject::sender());
-    openConnections.remove(sender);
-    sender->deleteLater();
-    if(openConnections.size() < maxConnections) {
-        listener.resumeAccepting();
+    emit newSecureConnection(dynamic_cast<Connection*>(QObject::sender()));
+}
+
+void NetworkManager::toDelete(Connection* target)
+{
+    if(!target) {
+        target = dynamic_cast<Connection*>(QObject::sender());
     }
+    openConnections.remove(target);
+    target->deleteLater();
 }

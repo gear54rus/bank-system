@@ -47,6 +47,7 @@ void Core::init()
             quint16 port = s.value("bind_port", CORE_DEFAULT_PORT).toUInt();
             quint8 maxConnections = s.value("max_connections", "5").toUInt();
             manager = new NetworkManager();
+            connect(manager, SIGNAL(newSecureConnection(Connection*)), &database, SLOT(addConnection(Connection*)));
             manager->setMaxConnections(maxConnections);
             Log(QString("Maximum simultaneous connections set to %1.").arg(QSN(maxConnections)), "Network");
             Log(QString("Attempting to bind to \"%1:%2\"...").arg(host.toString(), QSN(port)), "Network");

@@ -22,11 +22,12 @@ private:
     QTcpServer listener;
     QSet<Connection*> openConnections;
 signals:
-
+    void newSecureConnection(Connection* target);
 public slots:
 private slots:
     void newConnection();
-    void toDelete();
+    void secured();
+    void toDelete(Connection* target = 0);
 };
 
 #endif // MANAGER_H
