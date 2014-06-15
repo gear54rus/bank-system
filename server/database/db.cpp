@@ -75,7 +75,7 @@ void DBController::processData(SecByteArray* data)
                             s->send(new SecByteArray(QString("code 0 %1;").arg(QSN(balance)).toUtf8()));
                             Log(QString("Balance request from %1: balance is %2.").arg(s->getConnection()->getRemote(), QSN(balance)), "Database", Log_Debug);
                         } else {
-                            if(balance > 0) {
+                            if(balance > 0 || amount > 0) {
                                 db.exec(QString("UPDATE `users` SET `balance` = %1 WHERE `name` = '%2';").arg(QSN(balance + amount), s->login));
                                 s->send(new SecByteArray(QString("code 0 %1;").arg(QSN(balance + amount)).toUtf8()));
                                 Log(QString("Balance alteration request from %1: altered by %2 and is now %3.").arg(s->getConnection()->getRemote(), QSN(amount), QSN(balance + amount)), "Database", Log_Debug);
