@@ -9,12 +9,15 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    //fix it
+    //_clientState = ClientStates::SECURE_CONNECTION;
 
     ui->cbFilter->addItem("DEBUG");
     ui->cbFilter->addItem("INFO");
     ui->cbFilter->addItem("WARNING");
     ui->cbFilter->addItem("ERROR");
 
+    _clientState = ClientStates::SECURE_CONNECTION;
     changeClientState(ClientStates::DISCONNECTED);
 
     //пробуем другой тред, пух.
@@ -38,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //to delete
     this->ui->ePort->setText("8815");
     this->ui->eAddress->setText("192.168.0.31");
+    //this->ui->eAddress->setText("hq.zion54.net");
     this->ui->ePubkeyPath->setText("C:\\Users\\Crazy_000\\Documents\\Repositories\\bank-system\\client\\build-ClientApplication-Desktop_Qt_5_2_0_MinGW_32bit-Debug\\pubKey.ini");
 
 }
@@ -69,30 +73,58 @@ void MainWindow::gotNewMessage(QByteArray message)
     case ClientStates::CONNECTING:
         break;
     case ClientStates::SECURE_CONNECTION:
+    {
+        if (message == "login:")
+        {
+            newLogMessage(INFO, "server ready to your login");
+            changeClientState(GOT_LOGIN);
+        }
+        else
+        {
+            newLogMessage(WARNING, "got in secure connection: " + message);
+        }
+    }
         break;
     case ClientStates::LOGINING:
     {
+        newLogMessage(DEBUG, "client got message in logining state: " + message);
         QString str(message);
-        if (str.indexOf(QString("success")))
+        if (str.indexOf(QString("code 0;")) != -1)
         {
             changeClientState(ClientStates::LOGINED);
-            QByteArray message;
-            message.append("balance get;");
-            emit(sendData(message));
         }
         else
         {
             newLogMessage(ERROR,"login failed: " + str);
             changeClientState(ClientStates::SECURE_CONNECTION);
         }
-
     }
         break;
     case ClientStates::LOGINED:
     {
-        //DELETE IT
-        newLogMessage(DEBUG, message);
+        if (message == "command:")
+        {
+            newLogMessage(INFO, "server is ready to receive command");
+            changeClientState(GOT_COMMAND);
+        }
+        else
+        {
+            newLogMessage(ERROR, "state: logined, got: " + message );
+        }
+        break;
     }
+    case ClientStates::ALTER_BALANCE_SENT:
+        if (message.indexOf("code 0") != -1)
+        {
+            QString str(message);
+            ui->eAccount->setText(str.mid(6,str.size()-7));
+            ui->eMoney->setText("0");
+        }
+        else
+        {
+            newLogMessage(WARNING, "after alter balance got not code 0: " + message );
+        }
+        changeClientState(ClientStates::LOGINED);
         break;
     //end of switch
     }
@@ -100,14 +132,6 @@ void MainWindow::gotNewMessage(QByteArray message)
 
 void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
 {
-    if (logMessage == "Socket operation timed out")
-    {
-        changeClientState(ClientStates::DISCONNECTED);
-    }
-    if (logMessage.indexOf(QString("disconnected")))
-    {
-        changeClientState(ClientStates::DISCONNECTED);
-    }
     if (logLevel >= ui->cbFilter->currentIndex())
     {
         QString message;
@@ -128,6 +152,16 @@ void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
         }
         ui->logBrowser->append(message.append(logMessage));
     }
+    //не смог открыть соединение
+    if (
+            (logMessage.indexOf("connection: Connection refused") != -1)
+            || (logMessage.indexOf("connection: Socket operation timed out") != -1)
+            || (logMessage.indexOf("closed connection") != -1)
+        )
+    {
+        changeClientState(ClientStates::DISCONNECTED);
+    }
+
 }
 
 void MainWindow::connectionSecureStateChanged(bool isSecure)
@@ -139,6 +173,10 @@ void MainWindow::connectionSecureStateChanged(bool isSecure)
 
 void MainWindow::changeClientState(ClientState newState)
 {
+    if (_clientState == newState)
+    {
+        return;
+    }
     _clientState = newState;
     QString status;
     switch (_clientState)
@@ -174,18 +212,26 @@ void MainWindow::changeClientState(ClientState newState)
         status = "connected";
 
         ui->bLogin->setText("Login");
-        ui->bLogin->setEnabled(true);
-
-        setLoginSettingsEnabled(true);
+        ui->bLogin->setEnabled(false);
 
         ui->lClientStatus->setText("Client status: connected");
+        ui->lClientStatus->setStyleSheet("QLabel { color : purple; }");
+
+        break;
+    case ClientStates::GOT_LOGIN:
+        status = "got login from server";
+
+        setLoginSettingsEnabled(true);
+        ui->bLogin->setEnabled(true);
+
+        ui->lClientStatus->setText("Client status: time to login");
         ui->lClientStatus->setStyleSheet("QLabel { color : purple; }");
 
         break;
     case ClientStates::LOGINING:
         status = "logining";
 
-        ui->bLogin->setEnabled("false");
+        ui->bLogin->setEnabled(false);
 
         setLoginSettingsEnabled(false);
 
@@ -196,13 +242,29 @@ void MainWindow::changeClientState(ClientState newState)
         status = "logined";
 
         ui->bLogin->setEnabled(true);
-        ui->bLogin->setText("Logout");
+        ui->bLogin->setText("Disconnect");
 
-        setAccountActionsEnabled(true);
+        setAccountActionsEnabled(false);
 
         ui->lClientStatus->setText("Client status: logined");
         ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
         break;
+    case ClientStates::GOT_COMMAND:
+        status = "got command";
+
+        setAccountActionsEnabled(true);
+
+        ui->lClientStatus->setText("Client status: time to command");
+        ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
+
+        break;
+    case ClientStates::ALTER_BALANCE_SENT:
+        status = "waiting for server";
+
+        setAccountActionsEnabled(false);
+
+        ui->lClientStatus->setText("Client status: waiting for server");
+        ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
     }
     newLogMessage(INFO, "client is " + status);
 }
@@ -221,6 +283,11 @@ void MainWindow::on_bLogin_clicked()
         break;
     case ClientStates::SECURE_CONNECTION:
     {
+
+    }
+        break;
+    case ClientStates::GOT_LOGIN:
+    {
         QByteArray message;
         message.append("login ").append(ui->eLogin->text()).append((" ")).append(ui->ePassword->text()).append(";");
         emit (sendData(message));
@@ -228,8 +295,16 @@ void MainWindow::on_bLogin_clicked()
     }
         break;
     case ClientStates::LOGINED:
-        emit(sendData("logout"));
-        changeClientState(ClientStates::SECURE_CONNECTION);
+        emit(sendData("disconnect;"));
+        changeClientState(ClientStates::DISCONNECTED);
+        break;
+    case ClientStates::GOT_COMMAND:
+        emit(sendData("disconnect;"));
+        changeClientState(ClientStates::DISCONNECTED);
+        break;
+    case ClientStates::ALTER_BALANCE_SENT:
+        emit(sendData("disconnect;"));
+        changeClientState(ClientStates::DISCONNECTED);
         break;
     }
 
@@ -241,6 +316,7 @@ void MainWindow::on_bAdd_clicked()
     message.append("balance alter +").append(ui->eMoney->text().append(";"));
     emit(sendData(message));
     newLogMessage(DEBUG,"balance alter + is sent: " + message);
+    changeClientState(ClientStates::ALTER_BALANCE_SENT);
 }
 
 void MainWindow::on_bSub_clicked()
@@ -249,6 +325,7 @@ void MainWindow::on_bSub_clicked()
     message.append("balance alter -").append(ui->eMoney->text().append(";"));
     emit(sendData(message));
     newLogMessage(DEBUG,"balance alter - is sent: " + message);
+    changeClientState(ClientStates::ALTER_BALANCE_SENT);
 }
 
 

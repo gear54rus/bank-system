@@ -12,6 +12,7 @@ connection::connection(QString rsaPublicKeyPath, QString address , quint16 port,
     _socket = new QTcpSocket(this);
     _connectionState = DISCONNECTED;
     connect(_socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+    connect(_socket, SIGNAL(disconnected()), this, SLOT(socketDisconneted()));
     setAddressAndPort(address, port);
     setRsaPublicKeyPath(rsaPublicKeyPath);
     dhcryptor::initialize();
@@ -35,7 +36,7 @@ void connection::readyRead()
     {
         if (type != DATA)
         {
-            emit (newLogMessage(ERROR, "Got corrupted message in secure connection"));
+            sendNewLogMessage(ERROR, "Got corrupted message in secure connection");
             return;
         }
         else
@@ -133,11 +134,11 @@ void connection::closeConnection(QString reason, bool isByServer)
     if (!isByServer)
     {
         sendMessage(CLOSE);
-        emit(newLogMessage(WARNING, "client closed connection: " + reason));
+        sendNewLogMessage(WARNING, "client closed connection: " + reason);
     }
     else
     {
-        emit(newLogMessage(WARNING, "server closed connection: " + reason));
+        sendNewLogMessage(WARNING, "server closed connection: " + reason);
     }
     changeState(DISCONNECTED);
     _socket->close();
@@ -191,7 +192,7 @@ bool connection::checkMessage(const QByteArray message)
         break;
     case DATA:
         length = lengthToBigEndian(message.mid(1,2));
-        return ((message.length() == length + 35) && (_sha256.hmac(message.mid(3,32)) == message.mid(35,32)));
+        return ((message.length() == length + 35) && (_sha256.hmac(message.mid(3,length)) == message.right(32)));
         break;
     default:
         return false;
@@ -242,6 +243,10 @@ bool connection::sendMessage(messageTypes messageType, const QByteArray message)
 
 void connection::changeState(connectionState newState)
 {
+    if (_connectionState == newState)
+    {
+        return;
+    }
     QString mess;
     if ((_connectionState == SECURE_CONNECTION) && (newState != SECURE_CONNECTION))
     {
@@ -282,7 +287,7 @@ void connection::changeState(connectionState newState)
         emit (connecionChangeSecureState(true));
         break;
     }
-    emit (newLogMessage(DEBUG, mess));
+    sendNewLogMessage(DEBUG, mess);
 }
 
 void connection::setConnection()
@@ -290,7 +295,7 @@ void connection::setConnection()
     _socket->connectToHost(_address, _port);
     if(!_socket->waitForConnected(5000))
     {
-        emit (newLogMessage(ERROR, _socket->errorString()));
+        sendNewLogMessage(ERROR, _socket->errorString());
         return;
     }
     sendMessage(CLIENT_HELLO);
@@ -322,7 +327,7 @@ void connection::setRsaPublicKeyPath(QString rsaPublicKeyPath)
     // instead of norm test path
     if (rsaPublicKeyPath.size() == 0)
     {
-        emit (newLogMessage(ERROR, "RSA Public Key Path is not set"));
+        sendNewLogMessage(ERROR, "RSA Public Key Path is not set");
         return;
     }
     if (_connectionState != DISCONNECTED)
@@ -339,7 +344,7 @@ void connection::setAddressAndPort(QString address, quint16 port)
 {
     if ((address.size() == 0) || (port == 0))
     {
-        emit (newLogMessage(ERROR, "Address and port are not set"));
+        sendNewLogMessage(ERROR, "Address and port are not set");
         return;
     }
     if (_connectionState != DISCONNECTED)
@@ -348,4 +353,15 @@ void connection::setAddressAndPort(QString address, quint16 port)
     }
     _address = address;
     _port = port;
+}
+
+void connection::sendNewLogMessage(logMessageType logLevel, QString logMessage)
+{
+    emit(newLogMessage(logLevel, "connection: " + logMessage));
+}
+
+void connection::socketDisconneted()
+{
+    closeConnection("server socket was closed", true);
+    _socket->close();
 }

@@ -60,6 +60,7 @@ signals:
     void newLogMessage(logMessageType logLevel, QString logMessage);
 private slots:
     void readyRead();
+    void socketDisconneted();
 private:
     QTcpSocket* _socket;
     aescryptor _aes;
@@ -75,6 +76,7 @@ private:
     bool checkMessage(const QByteArray message);
     bool sendMessage(messageTypes messageType,const QByteArray message = QByteArray());
     bool isConnectionSecured();
+    void sendNewLogMessage(logMessageType logLevel, QString logMessage);
 };
 
 #endif // CONNECTION_H
