@@ -37,7 +37,7 @@ void connection::readyRead()
     {
         if (type != DATA)
         {
-            sendNewLogMessage(ERROR, "Got corrupted message in secure connection");
+            sendNewLogMessage(ERROR, "got corrupted message in secure connection");
             return;
         }
         else
@@ -56,7 +56,7 @@ void connection::readyRead()
         {
             if (type != SERVER_HELLO)
             {
-                closeConnection("recevied not server hello message type after client hello");
+                closeConnection("received message was not of server hello type after client hello");
                 return;
             }
             changeState(SERVER_HELLO_RECEIVED);
@@ -70,7 +70,7 @@ void connection::readyRead()
         {
             if (type != SERVER_DH_BEGIN)
             {
-                closeConnection("recevied not server dh begin message type after ack");
+                closeConnection("received message was not of server dh begin type after ack");
                 return;
             }
             changeState(SERVER_DH_RECEIVED);
@@ -92,7 +92,7 @@ void connection::readyRead()
         {
             if (type != CHANGE_CIPHER_SPEC)
             {
-                closeConnection("received not change cipher spec message after client dh end message");
+                closeConnection("received message was not of cipher spec type after client dh end");
                 return;
             }
             changeState(CHANGE_CIPHER_SPEC_RECEIVED);
@@ -106,7 +106,7 @@ void connection::readyRead()
         {
             if (type != DATA)
             {
-                closeConnection("recevied not data message in check hash exhange");
+                closeConnection("received message was not of data type in check hash exhange");
                 return;
             }
             changeState(CHECK_HASH_RECEIVED);
@@ -340,9 +340,6 @@ void connection::setRsaPublicKeyPath(QString rsaPublicKeyPath)
         closeConnection("set new RSA Public Key");
     }
     _rsa.loadPublicKeyFromFile2(rsaPublicKeyPath.toStdString());
-    //to delete
-    int b =2;
-    b++;
 }
 
 void connection::setAddressAndPort(QString address, quint16 port)

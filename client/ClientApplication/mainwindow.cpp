@@ -82,7 +82,7 @@ void MainWindow::gotNewMessage(QByteArray message)
     {
         if (message == "login:")
         {
-            newLogMessage(INFO, "server ready to your login");
+            newLogMessage(INFO, "server awaits your login");
             changeClientState(GOT_LOGIN);
         }
         else
@@ -93,7 +93,7 @@ void MainWindow::gotNewMessage(QByteArray message)
         break;
     case ClientStates::LOGINING:
     {
-        newLogMessage(DEBUG, "client got message in logining state: " + message);
+        newLogMessage(DEBUG, "client got message in logging in state: " + message);
         QString str(message);
         if (str.indexOf(QString("code 0;")) != -1)
         {
@@ -124,7 +124,7 @@ void MainWindow::gotNewMessage(QByteArray message)
         }
         else
         {
-            newLogMessage(ERROR, "state: logined, got: " + message );
+            newLogMessage(ERROR, "state: logged in, got: " + message );
         }
         break;
     }
@@ -132,12 +132,12 @@ void MainWindow::gotNewMessage(QByteArray message)
         if (message.indexOf("code 0") != -1)
         {
             QString str(message);
-            ui->eAccount->setText(str.mid(6,str.size()-7));
+            ui->eAccount->setText(str.mid(7,str.size()-8));
             ui->eMoney->setText("0");
         }
         else
         {
-            newLogMessage(WARNING, "after alter balance got not code 0: " + message );
+            newLogMessage(WARNING, "balance alteration error: " + message );
         }
         changeClientState(ClientStates::LOGINED);
         break;
@@ -219,7 +219,7 @@ void MainWindow::changeClientState(ClientState newState)
     {
     case ClientStates::DISCONNECTED:
         status = "disconnected";
-        ui->bLogin->setText("Set connection");
+        ui->bLogin->setText("Connect");
         ui->bLogin->setEnabled(true);
 
         setLoginSettingsEnabled(false);
@@ -275,7 +275,7 @@ void MainWindow::changeClientState(ClientState newState)
 
         setLoginSettingsEnabled(false);
 
-        ui->lClientStatus->setText("Client status: logining");
+        ui->lClientStatus->setText("Client status: logging in");
         ui->lClientStatus->setStyleSheet("QLabel { color : purple; }");
         break;
     case ClientStates::LOGINED:
@@ -286,7 +286,7 @@ void MainWindow::changeClientState(ClientState newState)
 
         setAccountActionsEnabled(false);
 
-        ui->lClientStatus->setText("Client status: logined");
+        ui->lClientStatus->setText("Client status: logged in");
         ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
         break;
     case ClientStates::GOT_COMMAND:
@@ -294,7 +294,7 @@ void MainWindow::changeClientState(ClientState newState)
 
         setAccountActionsEnabled(true);
 
-        ui->lClientStatus->setText("Client status: time to command");
+        ui->lClientStatus->setText("Client status: time to send command");
         ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
 
         break;
@@ -350,7 +350,7 @@ void MainWindow::on_bLogin_clicked()
 void MainWindow::on_bAdd_clicked()
 {
     QByteArray message;
-    message.append("balance alter +").append(ui->eMoney->text().append(";"));
+    message.append("balance alter +").append(QString::number(ui->eMoney->text().toULongLong()).append(";"));
     emit(sendData(message));
     newLogMessage(DEBUG,"balance alter + is sent: " + message);
     changeClientState(ClientStates::ALTER_BALANCE_SENT);
@@ -359,7 +359,7 @@ void MainWindow::on_bAdd_clicked()
 void MainWindow::on_bSub_clicked()
 {
     QByteArray message;
-    message.append("balance alter -").append(ui->eMoney->text().append(";"));
+    message.append("balance alter -").append(QString::number(ui->eMoney->text().toULongLong()).append(";"));
     emit(sendData(message));
     newLogMessage(DEBUG,"balance alter - is sent: " + message);
     changeClientState(ClientStates::ALTER_BALANCE_SENT);
