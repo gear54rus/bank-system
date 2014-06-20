@@ -73,7 +73,7 @@ private:
     QByteArray lengthToLittleEndian(short int length);
     short int lengthToBigEndian(QByteArray length);
     void changeState(connectionState newState);
-    bool checkMessage(const QByteArray message);
+    QString checkMessage(const QByteArray message);
     bool sendMessage(messageTypes messageType,const QByteArray message = QByteArray());
     bool isConnectionSecured();
     void sendNewLogMessage(logMessageType logLevel, QString logMessage);

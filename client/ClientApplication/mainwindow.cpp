@@ -174,6 +174,11 @@ void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
         }
 
         message.append(logMessage);
+
+        QTextCursor cursor = ui->logBrowser->textCursor();
+        cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor);
+        ui->logBrowser->setTextCursor(cursor);
+
         ui->logBrowser->insertHtml(color + message +  endHtml);
 
         //set vertical scroll to end

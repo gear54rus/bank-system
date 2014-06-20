@@ -21,9 +21,10 @@ connection::connection(QString rsaPublicKeyPath, QString address , quint16 port,
 void connection::readyRead()
 {
     const QByteArray data = _socket->readAll();
-    if (!checkMessage(data))
+    QString checkMessageResult = checkMessage(data);
+    if (!checkMessageResult.isEmpty())
     {
-        closeConnection("received corrupted message");
+        closeConnection("received corrupted message: " + checkMessageResult);
         return;
     }
     unsigned char type = data[0];
@@ -159,44 +160,48 @@ short int connection::lengthToBigEndian(QByteArray length)
     return result;
 }
 
-bool connection::checkMessage(const QByteArray message)
+QString connection::checkMessage(const QByteArray message)
 {
-    if (message.length() == 0) return false;
+    QString result;
+    if (message.length() == 0) return result;
     unsigned char type = message[0];
     short unsigned int length;
     switch (type)
     {
     case ACK:
-        return message.length() == 1;
+        if (message.length() != 1) result += "length of ACK is not 1";
         break;
     case CLOSE:
-        return message.length( )== 1;
+        if (message.length( ) != 1) result += "length of CLOSE is not 1";
         break;
     case CHANGE_CIPHER_SPEC:
-        return message.length() == 1;
+        if (message.length() != 1) result += "length of CHANGE_CIPHER_SPEC is not 1";
         break;
     case CLIENT_HELLO:
         length = lengthToBigEndian(message.mid(1,2));
-        return message.length()==length+3;
+        if (message.length() != length + 3) result += "length of CLIENT_HELLO is not 1";
         break;
     case SERVER_HELLO:
-        return message.length() == 2;
+        if (message.length() != 2) result += "length of SERVER_HELLO is not 2";
         break;
     case SERVER_DH_BEGIN:
         length = lengthToBigEndian(message.mid(1,2));
-        return ((message.length() == (length +1+2+256)) && (_rsa.verifyMessage(message.mid(3,length),message.mid(259,256))));
+        if (message.length() != (length +1+2+256)) result += "length of SERVER_DH_BEGIN is wrong";
+        if (!_rsa.verifyMessage(message.mid(3,length),message.mid(259,256))) result += "RSA signature verification failed" ;
         break;
     case CLIENT_DH_END:
         length = lengthToBigEndian(message.mid(1,2));
-        return message.length() == length +3;
+        if (message.length() != length + 3) result += "length of CLIENT_DH_END is wrong";
         break;
     case DATA:
         length = lengthToBigEndian(message.mid(1,2));
-        return ((message.length() == length + 35) && (_sha256.hmac(message.mid(3,length)) == message.right(32)));
+        if (message.length() != length + 35) result += "length of DATA is wrong";
+        if (! (_sha256.hmac(message.mid(3,length)) == message.right(32))) result += "HMAC verification failed";
         break;
     default:
-        return false;
+        result += "dont know how to proccess this type of message";
     }
+    return result;
 }
 
 bool connection::sendMessage(messageTypes messageType, const QByteArray message)
