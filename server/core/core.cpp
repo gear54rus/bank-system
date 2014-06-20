@@ -43,7 +43,7 @@ void Core::init()
         s.beginGroup("Network");
         {
             QHostAddress host = QHostAddress(s.value("bind_ip", "0.0.0.0").toString());
-            host = (host.isNull()) ? QHostAddress::AnyIPv4 : host;
+            host = (!s.value("bind_ip", "0.0.0.0").toString().compare("localhost", Qt::CaseInsensitive)) ? QHostAddress(QHostAddress::LocalHost) : ((host.isNull()) ? QHostAddress::AnyIPv4 : host);
             quint16 port = s.value("bind_port", CORE_DEFAULT_PORT).toUInt();
             quint8 maxConnections = s.value("max_connections", "5").toUInt();
             manager = new NetworkManager();
