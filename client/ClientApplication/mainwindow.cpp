@@ -10,25 +10,25 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
 
-#if ENABLE_PUSH_MESSAGE_BUTTON == false
+#if DEBUG_MODE == false
     ui->bSendMessage->hide();
     ui->bSendMessage->setEnabled(false);
 
     ui->eSendMessage->hide();
     ui->eSendMessage->setEnabled(false);
-
+#else
     ui->ePort->setText("8815");
-    ui->eAddress->setText("192.168.0.31");
+    //ui->eAddress->setText("192.168.0.31");
     ui->eAddress->setText("hq.zion54.net");
     ui->ePubkeyPath->setText("C:\\Users\\Crazy_000\\Documents\\Repositories\\bank-system\\client\\build-ClientApplication-Desktop_Qt_5_2_0_MinGW_32bit-Debug\\pubKey.ini");
 #endif
-
-
 
     ui->cbFilter->addItem("DEBUG");
     ui->cbFilter->addItem("INFO");
     ui->cbFilter->addItem("WARNING");
     ui->cbFilter->addItem("ERROR");
+
+    ui->cbFilter->setCurrentIndex(1);
 
     _clientState = ClientStates::SECURE_CONNECTION;
     changeClientState(ClientStates::DISCONNECTED);
@@ -50,9 +50,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     _connection->moveToThread(_connectionThread);
     _connectionThread->start();
-
-
-
 }
 
 MainWindow::~MainWindow()
@@ -113,8 +110,17 @@ void MainWindow::gotNewMessage(QByteArray message)
     {
         if (message == "command:")
         {
-            newLogMessage(INFO, "server is ready to receive command");
-            changeClientState(GOT_COMMAND);
+            if (ui->eAccount->text().isEmpty())
+            {
+                newLogMessage(DEBUG, "balance alter 0 is sent");
+                sendData("balance alter 0;");
+                changeClientState(ALTER_BALANCE_SENT);
+            }
+            else
+            {
+                newLogMessage(INFO, "server is ready to receive command");
+                changeClientState(GOT_COMMAND);
+            }
         }
         else
         {
@@ -144,28 +150,44 @@ void MainWindow::newLogMessage(logMessageType logLevel, QString logMessage)
     if (logLevel >= ui->cbFilter->currentIndex())
     {
         QString message;
+        QString color;
+        QString endHtml = "</font><br>\n";
+
         switch(logLevel)
         {
         case DEBUG:
             message.append("DEBUG: ");
+            color.append("<font>");
             break;
         case INFO:
             message.append("INFO: ");
+            color.append("<font>");
             break;
         case WARNING:
             message.append("WARNING: ");
+            color.append("<font color=\"Orange\">");
             break;
         case ERROR:
             message.append("ERROR: ");
+            color.append("<font color=\"Red\">");
             break;
         }
-        ui->logBrowser->append(message.append(logMessage));
+
+        message.append(logMessage);
+        ui->logBrowser->insertHtml(color + message +  endHtml);
+
+        //set vertical scroll to end
+        QScrollBar *sb = ui->logBrowser->verticalScrollBar();
+        sb->setValue(sb->maximum());
     }
     //не смог открыть соединение
     if (
             (logMessage.indexOf("connection: Connection refused") != -1)
             || (logMessage.indexOf("connection: Socket operation timed out") != -1)
             || (logMessage.indexOf("closed connection") != -1)
+            || (logMessage.indexOf("RSA Public Key Path is not set") != -1)
+            || (logMessage.indexOf("Address and port are not set") != -1)
+            || (logMessage.indexOf("Host not found") != -1)
         )
     {
         changeClientState(ClientStates::DISCONNECTED);
@@ -200,6 +222,10 @@ void MainWindow::changeClientState(ClientState newState)
         setConnectionSettingsEnabled(true);
 
         setAccountActionsEnabled(false);
+
+        ui->eAccount->clear();
+        ui->eMoney->clear();
+        ui->ePassword->clear();
 
         ui->lClientStatus->setStyleSheet("QLabel { color : red; }");
         ui->lClientStatus->setText("Client status: disconnected");
@@ -275,7 +301,7 @@ void MainWindow::changeClientState(ClientState newState)
         ui->lClientStatus->setText("Client status: waiting for server");
         ui->lClientStatus->setStyleSheet("QLabel { color : green; }");
     }
-    newLogMessage(INFO, "client is " + status);
+    newLogMessage(DEBUG, "client is " + status);
 }
 
 void MainWindow::on_bLogin_clicked()
@@ -291,9 +317,6 @@ void MainWindow::on_bLogin_clicked()
     case ClientStates::CONNECTING:
         break;
     case ClientStates::SECURE_CONNECTION:
-    {
-
-    }
         break;
     case ClientStates::GOT_LOGIN:
     {

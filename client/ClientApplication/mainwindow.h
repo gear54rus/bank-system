@@ -1,11 +1,16 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#define ENABLE_PUSH_MESSAGE_BUTTON false
+#define DEBUG_MODE false
+#define LOG_SIZE 100
 
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QThread>
+#include <QTextBlock>
+#include <QTextCursor>
+#include <QScrollBar>
+
 
 #include <../Core/connection.h>
 
