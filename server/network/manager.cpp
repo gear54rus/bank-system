@@ -15,14 +15,15 @@ void NetworkManager::setMaxConnections(quint16 maxConnections)
 
 void NetworkManager::newConnection()
 {
-    listener.pauseAccepting();
     Connection* newConnection = new Connection(listener.nextPendingConnection());
+    if(openConnections.size() >= maxConnections) {
+        newConnection->close(true);
+        Log(QString("Connection with %1 was dropped: too many open connections!").arg(newConnection->getRemote()), "Network", Log_Error);
+        return;
+    }
     connect(newConnection, SIGNAL(disconnected()), this, SLOT(toDelete()), Qt::QueuedConnection);
     connect(newConnection, SIGNAL(secured()), this, SLOT(secured()), Qt::QueuedConnection);
     openConnections.insert(newConnection);
-    if(openConnections.size() < maxConnections) {
-        listener.resumeAccepting();
-    }
 }
 void NetworkManager::secured()
 {
