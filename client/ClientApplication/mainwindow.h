@@ -1,10 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#define ENABLE_PUSH_MESSAGE_BUTTON false
+
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QThread>
-
 
 #include <../Core/connection.h>
 

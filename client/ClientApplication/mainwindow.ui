@@ -10,8 +10,24 @@
     <height>430</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>749</width>
+    <height>430</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>749</width>
+    <height>430</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Bank system client application</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="icons.qrc">
+    <normaloff>:/icons/mainWindow.ico</normaloff>:/icons/mainWindow.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QLineEdit" name="eLogin">
@@ -108,7 +124,7 @@
      <rect>
       <x>140</x>
       <y>140</y>
-      <width>31</width>
+      <width>21</width>
       <height>21</height>
      </rect>
     </property>
@@ -121,8 +137,8 @@
      <string notr="true"/>
     </property>
     <property name="icon">
-     <iconset>
-      <normaloff>../../../../../Pictures/key.ico</normaloff>../../../../../Pictures/key.ico</iconset>
+     <iconset resource="icons.qrc">
+      <normaloff>:/icons/RSAPublicKeyPath.ico</normaloff>:/icons/RSAPublicKeyPath.ico</iconset>
     </property>
    </widget>
    <widget class="QTextBrowser" name="logBrowser">
@@ -292,7 +308,7 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit">
+   <widget class="QLineEdit" name="eSendMessage">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -302,7 +318,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="bSendMessage">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -312,12 +328,14 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Send Message</string>
     </property>
    </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -9,8 +9,21 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    //fix it
-    //_clientState = ClientStates::SECURE_CONNECTION;
+
+#if ENABLE_PUSH_MESSAGE_BUTTON == false
+    ui->bSendMessage->hide();
+    ui->bSendMessage->setEnabled(false);
+
+    ui->eSendMessage->hide();
+    ui->eSendMessage->setEnabled(false);
+
+    ui->ePort->setText("8815");
+    ui->eAddress->setText("192.168.0.31");
+    ui->eAddress->setText("hq.zion54.net");
+    ui->ePubkeyPath->setText("C:\\Users\\Crazy_000\\Documents\\Repositories\\bank-system\\client\\build-ClientApplication-Desktop_Qt_5_2_0_MinGW_32bit-Debug\\pubKey.ini");
+#endif
+
+
 
     ui->cbFilter->addItem("DEBUG");
     ui->cbFilter->addItem("INFO");
@@ -38,11 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
     _connection->moveToThread(_connectionThread);
     _connectionThread->start();
 
-    //to delete
-    this->ui->ePort->setText("8815");
-    this->ui->eAddress->setText("192.168.0.31");
-    //this->ui->eAddress->setText("hq.zion54.net");
-    this->ui->ePubkeyPath->setText("C:\\Users\\Crazy_000\\Documents\\Repositories\\bank-system\\client\\build-ClientApplication-Desktop_Qt_5_2_0_MinGW_32bit-Debug\\pubKey.ini");
+
 
 }
 
@@ -353,6 +362,6 @@ void MainWindow::setLoginSettingsEnabled(bool enable)
 void MainWindow::on_pushButton_clicked()
 {
     QByteArray mess;
-    mess.append(ui->lineEdit->text());
+    mess.append(ui->eSendMessage->text());
     emit (sendData(mess));
 }

@@ -30,3 +30,6 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui
 
 LIBS += -lcryptopp562
+
+RESOURCES += \
+    icons.qrc
