@@ -18,6 +18,7 @@ void NetworkManager::newConnection()
     Connection* newConnection = new Connection(listener.nextPendingConnection());
     if(openConnections.size() >= maxConnections) {
         newConnection->close(true);
+        newConnection->deleteLater();
         Log(QString("Connection with %1 was dropped: too many open connections!").arg(newConnection->getRemote()), "Network", Log_Error);
         return;
     }

@@ -35,4 +35,4 @@ HEADERS += \
     crypto/secbytearray.h \
     database/session.h
 
-LIBS+= -lcryptopp
+LIBS+= -lcryptopp562
