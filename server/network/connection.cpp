@@ -315,6 +315,7 @@ void Connection::newData()
             handshake += buffer;
             socket->write(buffer);
             socket->flush();
+            socket->waitForBytesWritten(-1);
         }
         if(state == SECURE) {
             emit secured();
@@ -339,5 +340,6 @@ void Connection::send(SecByteArray* data)
     buffer.append(signSymmetric(ciphertext));
     socket->write(buffer);
     socket->flush();
+    socket->waitForBytesWritten(-1);
     delete data;
 }
