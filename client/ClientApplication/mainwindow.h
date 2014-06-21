@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#define DEBUG_MODE false
+#define DEBUG_MODE true
 #define LOG_SIZE 100
 
 #include <QMainWindow>
@@ -57,6 +57,8 @@ private slots:
     void on_bSub_clicked();
 
     void on_pushButton_clicked();
+
+    void on_bSendMessage_clicked();
 
 private:
     Ui::MainWindow *ui;

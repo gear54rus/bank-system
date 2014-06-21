@@ -9,6 +9,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->cbFilter->addItem("DEBUG");
+    ui->cbFilter->addItem("INFO");
+    ui->cbFilter->addItem("WARNING");
+    ui->cbFilter->addItem("ERROR");
+
+    ui->cbFilter->setCurrentIndex(1);
 
 #if DEBUG_MODE == false
     ui->bSendMessage->hide();
@@ -17,18 +23,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->eSendMessage->hide();
     ui->eSendMessage->setEnabled(false);
 #else
+    ui->cbFilter->setCurrentIndex(0);
     ui->ePort->setText("8815");
-    //ui->eAddress->setText("192.168.0.31");
-    ui->eAddress->setText("hq.zion54.net");
+    ui->eAddress->setText("192.168.0.31");
+    //ui->eAddress->setText("hq.zion54.net");
     ui->ePubkeyPath->setText("C:\\Users\\Crazy_000\\Documents\\Repositories\\bank-system\\client\\build-ClientApplication-Desktop_Qt_5_2_0_MinGW_32bit-Debug\\pubKey.ini");
 #endif
 
-    ui->cbFilter->addItem("DEBUG");
-    ui->cbFilter->addItem("INFO");
-    ui->cbFilter->addItem("WARNING");
-    ui->cbFilter->addItem("ERROR");
 
-    ui->cbFilter->setCurrentIndex(1);
+
+
 
     _clientState = ClientStates::SECURE_CONNECTION;
     changeClientState(ClientStates::DISCONNECTED);
@@ -365,7 +369,6 @@ void MainWindow::on_bSub_clicked()
     changeClientState(ClientStates::ALTER_BALANCE_SENT);
 }
 
-
 void MainWindow::setConnectionSettingsEnabled(bool enable)
 {
     ui->eAddress->setReadOnly(!enable);
@@ -387,7 +390,7 @@ void MainWindow::setLoginSettingsEnabled(bool enable)
     ui->ePassword->setReadOnly(!enable);
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_bSendMessage_clicked()
 {
     QByteArray mess;
     mess.append(ui->eSendMessage->text());

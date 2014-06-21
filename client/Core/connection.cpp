@@ -165,7 +165,7 @@ QString connection::checkMessage(const QByteArray message)
     QString result;
     if (message.length() == 0) return result;
     unsigned char type = message[0];
-    short unsigned int length;
+    short unsigned int length = 0;
     switch (type)
     {
     case ACK:
@@ -195,7 +195,7 @@ QString connection::checkMessage(const QByteArray message)
         break;
     case DATA:
         length = lengthToBigEndian(message.mid(1,2));
-        if (message.length() != length + 35) result += "length of DATA is wrong";
+        if (message.length() != length + 35) result += QString("length of DATA is wrong: real message length = ") + QString::number(message.length()) + " get in message = " + QString::number(length) + " ";
         if (! (_sha256.hmac(message.mid(3,length)) == message.right(32))) result += "HMAC verification failed";
         break;
     default:
