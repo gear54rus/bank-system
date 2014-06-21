@@ -229,7 +229,7 @@ void Connection::continueHandshake()
         buffer.append(serializeInt(32));
         buffer.append(AESEncrypt(SHA256(handshake)));
         buffer.append(signSymmetric(buffer.right(32)));
-        Log(QString("Veify sent to %1.").arg(remote), "Network", Log_Debug);
+        Log(QString("Verify sent to %1.").arg(remote), "Network", Log_Debug);
         Log(QString("Connection with %1 is now secure!").arg(remote), "Network");
         handshake.clear();
         DHPrivate.clear();
