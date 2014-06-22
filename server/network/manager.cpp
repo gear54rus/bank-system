@@ -1,6 +1,6 @@
 #include "manager.h"
 
-NetworkManager::NetworkManager(QObject *parent) :
+NetworkManager::NetworkManager(QObject* parent) :
     QObject(parent),
     listener(this)
 {
@@ -15,23 +15,27 @@ void NetworkManager::setMaxConnections(quint16 maxConnections)
 
 void NetworkManager::newConnection()
 {
-    listener.pauseAccepting();
     Connection* newConnection = new Connection(listener.nextPendingConnection());
-    connect(newConnection, SIGNAL(disconnected()), this, SLOT(toDelete()), Qt::QueuedConnection);
-    openConnections.insert(newConnection);
-    if (openConnections.size() < maxConnections)
-    {
-        listener.resumeAccepting();
+    if(openConnections.size() >= maxConnections) {
+        newConnection->close(true);
+        newConnection->deleteLater();
+        Log(QString("Connection with %1 was dropped: too many open connections!").arg(newConnection->getRemote()), "Network", Log_Error);
+        return;
     }
+    connect(newConnection, SIGNAL(disconnected()), this, SLOT(toDelete()), Qt::QueuedConnection);
+    connect(newConnection, SIGNAL(secured()), this, SLOT(secured()), Qt::QueuedConnection);
+    openConnections.insert(newConnection);
+}
+void NetworkManager::secured()
+{
+    emit newSecureConnection(dynamic_cast<Connection*>(QObject::sender()));
 }
 
-void NetworkManager::toDelete()
+void NetworkManager::toDelete(Connection* target)
 {
-    Connection* sender = dynamic_cast<Connection*>(QObject::sender());
-    openConnections.remove(sender);
-    sender->deleteLater();
-    if (openConnections.size() < maxConnections)
-    {
-        listener.resumeAccepting();
+    if(!target) {
+        target = dynamic_cast<Connection*>(QObject::sender());
     }
+    openConnections.remove(target);
+    target->deleteLater();
 }

@@ -21,7 +21,8 @@ SOURCES += main.cpp \
     database/db.cpp \
     network/manager.cpp \
     network/connection.cpp \
-    crypto/secbytearray.cpp
+    crypto/secbytearray.cpp \
+    database/session.cpp
 
 HEADERS += \
     core/core.h \
@@ -31,6 +32,7 @@ HEADERS += \
     global.h \
     network/manager.h \
     network/connection.h \
-    crypto/secbytearray.h
+    crypto/secbytearray.h \
+    database/session.h
 
-LIBS+= -lcryptopp
+LIBS+= -lcryptopp562
