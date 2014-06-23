@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#define DEBUG_MODE true
+#define DEBUG_MODE false
 #define LOG_SIZE 100
 
 #include <QMainWindow>
