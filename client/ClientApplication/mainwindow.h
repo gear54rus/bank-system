@@ -56,8 +56,6 @@ private slots:
 
     void on_bSub_clicked();
 
-    void on_pushButton_clicked();
-
     void on_bSendMessage_clicked();
 
 private:
