@@ -20,14 +20,64 @@ connection::connection(QString rsaPublicKeyPath, QString address , quint16 port,
 
 void connection::readyRead()
 {
-    const QByteArray data = _socket->readAll();
-    QString checkMessageResult = checkMessage(data);
+    QByteArray data = _socket->readAll();
+    while (data.size())
+    {
+        QByteArray message;
+        int messageLength = 0;
+        unsigned char dataType = data[0];
+        switch (dataType)
+        {
+        case ACK:
+            messageLength = 1;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        case CLOSE:
+            messageLength = 1;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        case CHANGE_CIPHER_SPEC:
+            messageLength = 1;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        case SERVER_HELLO:
+            messageLength = 2;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        case SERVER_DH_BEGIN:
+            messageLength = 1 + 2 + 256 + 256;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        case DATA:
+            messageLength = 1 + 2 + lengthToBigEndian(data.mid(1,2)) + 32;
+            message = data.left(messageLength);
+            data.remove(0,messageLength);
+            break;
+        default:
+            data.clear();
+            closeConnection("received unknown type of message");
+        }
+        if (messageLength)
+        {
+            processNewMessage(message);
+        }
+    }
+}
+
+void connection::processNewMessage(QByteArray message)
+{
+    QString checkMessageResult = checkMessage(message);
     if (!checkMessageResult.isEmpty())
     {
         closeConnection("received corrupted message: " + checkMessageResult);
         return;
     }
-    unsigned char type = data[0];
+    unsigned char type = message[0];
     if (type == CLOSE)
     {
         closeConnection("",true);
@@ -42,8 +92,8 @@ void connection::readyRead()
         }
         else
         {
-            short unsigned int length = lengthToBigEndian(data.mid(1,2));
-            _buffer = data.mid(3,length);
+            short unsigned int length = lengthToBigEndian(message.mid(1,2));
+            _buffer = message.mid(3,length);
             _buffer = _aes.decrypt(_buffer);
             emit( gotNewMessage(_buffer));
         }
@@ -60,7 +110,7 @@ void connection::readyRead()
                 return;
             }
             changeState(SERVER_HELLO_RECEIVED);
-            _buffer.append(data);
+            _buffer.append(message);
             sendMessage(ACK);
             changeState(ACK_SENT);
 
@@ -74,8 +124,8 @@ void connection::readyRead()
                 return;
             }
             changeState(SERVER_DH_RECEIVED);
-            short unsigned int dataLength = lengthToBigEndian(data.mid(1,2));
-            QByteArray serverDhPublicKey = data.mid(3,dataLength);
+            short unsigned int dataLength = lengthToBigEndian(message.mid(1,2));
+            QByteArray serverDhPublicKey = message.mid(3,dataLength);
             QByteArray myDhPrivateKey, myDhPublicKey;
             dhcryptor::getKeyPair(myDhPrivateKey,myDhPublicKey);
             QByteArray sharedSecret = dhcryptor::getSharedSecret(myDhPrivateKey,serverDhPublicKey);
@@ -83,7 +133,7 @@ void connection::readyRead()
             QByteArray iv = _sha256.hash(sharedSecret);
             _aes.setKeyWithIV(_aesKey,iv);
             _sha256.setKeyToHmac(_aesKey);
-            _buffer.append(data);
+            _buffer.append(message);
             sendMessage(CLIENT_DH_END, myDhPublicKey);
             changeState(CLIENT_DH_SENT);
         }
@@ -96,7 +146,7 @@ void connection::readyRead()
                 return;
             }
             changeState(CHANGE_CIPHER_SPEC_RECEIVED);
-            _buffer.append(data);
+            _buffer.append(message);
             sendMessage(DATA, _sha256.hash(_buffer));
             changeState(CHECK_HASH_SENT);
         }
@@ -110,8 +160,8 @@ void connection::readyRead()
                 return;
             }
             changeState(CHECK_HASH_RECEIVED);
-            short unsigned int dataLength = lengthToBigEndian(data.mid(1,2));
-            QByteArray serverHash = data.mid(3,32);
+            short unsigned int dataLength = lengthToBigEndian(message.mid(1,2));
+            QByteArray serverHash = message.mid(3,32);
             serverHash = _aes.decrypt(serverHash);
             QByteArray ourHash = _sha256.hash(_buffer);
             if (!(ourHash == serverHash))
